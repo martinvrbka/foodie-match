@@ -57,7 +57,12 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — One active session per couple**, cancellable.
 - **2026-09-26 — 0 liked by both → first tap by either partner wins**; "Reshuffle" starts a new swipe round; if nobody liked anything, only reshuffle.
 - **2026-09-26 — Shortlist > 5 → union of both top-5s (up to 10) is ranked.** The spec's "max 5" and "union of top 5s" conflict; union chosen.
-- **2026-09-26 — Winner computed by the last partner to finish** with the pure Borda function (random tie-break), saved via an RPC that accepts only the first write; both phones receive it via realtime. Avoids a second Borda implementation in SQL.
+- **2026-09-26 — Every stage change is computed on the phone** (`tonightAdvance` in `src/logic/tonight.ts`: swipe outcome, union of top 5s, Borda winner) and saved with `tonight_advance`, which applies only the first write for a stage. Both phones try whenever they see both partners finished, so no single phone has to stay online. Avoids a second implementation in SQL.
+- **2026-09-26 — Stages: `swiping` → `choosing` | `shortlisting` → `ranking` | `ranking` | `done`** (plus `cancelled`). The server checks transitions, that both finished the stage, and that a chosen/ranked winner is on the shortlist.
+- **2026-09-26 — Ranking is tap-in-order, not drag.** Easier to use and accessible; same result (a full order).
+- **2026-09-26 — Reshuffle = cancel the session and start a new one with the same filters** (Tonight swipes are unique per session).
+- **2026-09-26 — The swipe round is the couple's visible matches with the session filters**, shuffled per phone. Partners can read each other's Tonight swipes (RLS policy) because the outcome needs both.
+- **2026-09-26 — Winner screen stays until "Done"** on each phone (dismissed session id in localStorage). A partner who started a round shows a "Join" banner on Home.
 - **2026-09-26 — Cooked history = sessions with `status = 'done'`.** No separate table.
 
 ## Tooling

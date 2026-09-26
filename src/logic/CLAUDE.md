@@ -36,6 +36,7 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - Mirrored in SQL (`private.is_match`, `private.excluded_ingredient_ids` in `*_rules.sql`): change both together.
 
 ## Tonight
-- Outcome after swipes: 0 both-liked → pick from union of likes (or reshuffle); 1 → winner; 2+ → ranking. Shortlist > 5 → union of each partner's top 5 (up to 10).
+- `swipeOutcome`: 0 both-liked → `choosing` from the union of likes (empty ⇒ only reshuffle); 1 → winner; 2–5 → `ranking`; > 5 → `shortlisting` (each picks a top 5, `unionOfTops` is ranked).
+- `tonightAdvance` returns the next stage only when both participants finished the current one; `choosing` ends by a tap, never automatically.
 - Borda: rank 1 of N = N points … rank N = 1. Tie-break: shorter `cook_time_min`, then injected RNG. Same inputs + same RNG ⇒ same winner.
 - Tonight swipes never affect discover data or matches.

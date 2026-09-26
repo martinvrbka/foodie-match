@@ -8,9 +8,11 @@ import { signOut, useAuth } from '../data/auth';
 import { errorText } from '../data/errors';
 import { matchesLastSeen, useMatchList } from '../data/matches';
 import { useInvites } from '../data/pairing';
+import { useTonight } from '../data/tonight';
 import { useProfile } from '../data/profile';
 import { t } from '../i18n';
 import { countNewMatches } from '../logic/matches';
+import { ACTIVE_STATUSES } from '../logic/tonight';
 import { colors, font, radius, spacing } from '../theme/tokens';
 
 export default function Home() {
@@ -19,6 +21,12 @@ export default function Home() {
   const { me, partner, loading, error, reload } = useProfile();
   const invites = useInvites(userId);
   const { matches } = useMatchList();
+  const tonight = useTonight(userId);
+  const tonightSession = tonight.data?.session;
+  const tonightActive = !!tonightSession && ACTIVE_STATUSES.includes(tonightSession.status);
+  // The partner started a round I haven't swiped in yet.
+  const tonightInvite =
+    tonightActive && tonightSession.startedBy !== userId && tonightSession.status === 'swiping' && !tonight.data?.me?.swipeDone;
   // Re-read "last seen" whenever Home is shown again (e.g. back from Matches).
   const [lastSeen, setLastSeen] = useState(() => matchesLastSeen(userId));
   useFocusEffect(useCallback(() => setLastSeen(matchesLastSeen(userId)), [userId]));
@@ -70,7 +78,22 @@ export default function Home() {
           </>
         )}
 
-        <Button label={t('discover.title')} onPress={() => router.push('/discover')} />
+        {partner && tonightInvite ? (
+          <View style={styles.invite} accessibilityRole="alert">
+            <Text style={styles.inviteText}>{t('tonight.joinBanner', { name: partner.display_name })}</Text>
+            <Button label={t('tonight.join')} onPress={() => router.push('/tonight')} />
+          </View>
+        ) : partner ? (
+          <Button
+            label={tonightActive ? t('tonight.continue') : t('tonight.cta')}
+            onPress={() => router.push('/tonight')}
+          />
+        ) : null}
+        <Button
+          label={t('discover.title')}
+          variant={partner ? 'text' : 'primary'}
+          onPress={() => router.push('/discover')}
+        />
         {partner ? (
           <View>
             <Button
@@ -113,6 +136,8 @@ const styles = StyleSheet.create({
     borderColor: colors.success,
     alignItems: 'flex-start',
   },
+  invite: { padding: spacing.md, gap: spacing.sm, borderRadius: radius.md, backgroundColor: colors.accent },
+  inviteText: { fontSize: font.body, fontWeight: '700', color: colors.onAccent },
   newBadge: {
     alignSelf: 'center',
     marginTop: -spacing.xs,

@@ -5,17 +5,23 @@ import { type Client, coupleOf, like, ok, pair, recipe, signUp } from './helpers
 
 type Payload = { eventType: string; new: Record<string, unknown> };
 
-/** Subscribes and resolves once the channel is live; events are collected into `events`. */
+/**
+ * Subscribes and resolves once Postgres changes are actually flowing (the
+ * "Subscribed to PostgreSQL" system message comes a moment after SUBSCRIBED;
+ * events in between are lost). Events are collected into `events`.
+ */
 async function listen(client: Client, table: string, filter?: string) {
   const events: Payload[] = [];
   const channel: RealtimeChannel = client.channel(`${table}-${Math.random()}`);
   await new Promise<void>((resolve, reject) => {
     channel
+      .on('system', {}, (msg: { extension?: string; status?: string }) => {
+        if (msg.extension === 'postgres_changes' && msg.status === 'ok') resolve();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table, ...(filter ? { filter } : {}) }, (p) =>
         events.push(p as unknown as Payload),
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIBED') resolve();
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') reject(new Error(status));
       });
   });

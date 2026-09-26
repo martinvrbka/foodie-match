@@ -208,13 +208,13 @@ isOneToOne: false
                   ]
                 },"tonight_participants": {
                   Row: {
-                    "rank_done": boolean,"session_id": string,"swipe_done": boolean,"user_id": string
+                    "rank_done": boolean,"session_id": string,"swipe_done": boolean,"top_done": boolean,"top_picks": (number)[],"user_id": string
                   }
                   Insert: {
-                    "rank_done"?: boolean,"session_id": string,"swipe_done"?: boolean,"user_id": string
+                    "rank_done"?: boolean,"session_id": string,"swipe_done"?: boolean,"top_done"?: boolean,"top_picks"?: (number)[],"user_id": string
                   }
                   Update: {
-                    "rank_done"?: boolean,"session_id"?: string,"swipe_done"?: boolean,"user_id"?: string
+                    "rank_done"?: boolean,"session_id"?: string,"swipe_done"?: boolean,"top_done"?: boolean,"top_picks"?: (number)[],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -264,13 +264,13 @@ isOneToOne: false
                   ]
                 },"tonight_sessions": {
                   Row: {
-                    "completed_at": string | null,"couple_id": string,"created_at": string,"filters": NonNullable<Json>,"id": string,"started_by": string,"status": string,"winner_recipe_id": number | null
+                    "completed_at": string | null,"couple_id": string,"created_at": string,"filters": NonNullable<Json>,"id": string,"shortlist": (number)[],"started_by": string,"status": string,"winner_recipe_id": number | null
                   }
                   Insert: {
-                    "completed_at"?: string | null,"couple_id": string,"created_at"?: string,"filters"?: NonNullable<Json>,"id"?: string,"started_by": string,"status"?: string,"winner_recipe_id"?: number | null
+                    "completed_at"?: string | null,"couple_id": string,"created_at"?: string,"filters"?: NonNullable<Json>,"id"?: string,"shortlist"?: (number)[],"started_by": string,"status"?: string,"winner_recipe_id"?: number | null
                   }
                   Update: {
-                    "completed_at"?: string | null,"couple_id"?: string,"created_at"?: string,"filters"?: NonNullable<Json>,"id"?: string,"started_by"?: string,"status"?: string,"winner_recipe_id"?: number | null
+                    "completed_at"?: string | null,"couple_id"?: string,"created_at"?: string,"filters"?: NonNullable<Json>,"id"?: string,"shortlist"?: (number)[],"started_by"?: string,"status"?: string,"winner_recipe_id"?: number | null
                   }
                   Relationships: [
                     {
@@ -349,7 +349,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "create_pairing_code":
+            "cancel_tonight":
+{ Args: { "p_session": string }; Returns: undefined
+                           },
+"create_pairing_code":
 { Args: Record<PropertyKey, never>; Returns: Json
                            },
 "discover_swipe":
@@ -371,6 +374,24 @@ isOneToOne: false
                            },
 "send_pairing_invite":
 { Args: { "p_email": string }; Returns: string
+                           },
+"start_tonight":
+{ Args: { "p_filters"?: Json }; Returns: string
+                           },
+"tonight_advance":
+{ Args: { "p_from": string,"p_session": string,"p_shortlist"?: (number)[],"p_to": string,"p_winner"?: number }; Returns: boolean
+                           },
+"tonight_finish_swiping":
+{ Args: { "p_session": string }; Returns: boolean
+                           },
+"tonight_submit_ranking":
+{ Args: { "p_recipe_ids": (number)[],"p_session": string }; Returns: boolean
+                           },
+"tonight_submit_top":
+{ Args: { "p_recipe_ids": (number)[],"p_session": string }; Returns: boolean
+                           },
+"tonight_swipe":
+{ Args: { "p_liked": boolean,"p_recipe_id": number,"p_session": string }; Returns: undefined
                            },
 "undo_last_discover_swipe":
 { Args: Record<PropertyKey, never>; Returns: Json
