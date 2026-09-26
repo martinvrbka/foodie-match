@@ -17,6 +17,7 @@ A Tinder-style recipe picker for two. Android only, free services only (Expo + S
    - `SUPABASE_ACCESS_TOKEN`: your avatar → Account preferences → Access Tokens → Generate new token
    - `SUPABASE_DB_PASSWORD`: the database password from project creation (Project Settings → Database to reset it)
 4. `npm run db:push` creates all tables and rules. Run it again whenever `supabase/migrations/` gets a new file.
+5. `npm run seed` imports all recipes from TheMealDB (about 10 seconds). Safe to run again; likes and exclusions are kept.
 
 `.env` is git-ignored. Never share the secret key, access token or DB password.
 
@@ -37,4 +38,4 @@ npx supabase start     # start the local practice database (Docker)
 npm run test:db        # database integration tests against it
 ```
 
-_Seeding recipes and building the APK are added in later phases._
+_Building the APK is added in a later phase._

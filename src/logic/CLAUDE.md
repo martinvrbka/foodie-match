@@ -6,9 +6,16 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - A user excludes ingredient X ⇒ they exclude X **and all its descendants** (single-parent hierarchy via `parent_id`). Always expand before comparing with recipe ingredients.
 - Only explicit exclusions are stored. Presets just add explicit ones (vegetarian = `meat` + `seafood`).
 
-## Normalization
-- Output is a canonical name: lowercase, trimmed, singular, synonyms applied from `data/ingredient-map.json`.
+## Normalization (`ingredients.ts`: `normalizeIngredient`, `resolveIngredient`, `ingredientTable`)
+- Canonical name: text before the first comma, no accents/punctuation, lowercase, leading filler words dropped (`dropWords`), last word singular, then `synonyms`.
 - Must be idempotent: `normalize(normalize(x)) === normalize(x)`. An unmapped ingredient still gets a canonical name (never dropped) so it can be excluded.
+- Parent, in order: explicit `ingredients` entry → any word (or its singular) in `keywords` → last word if it is a listed ingredient. Category comes from the parent chain, else `categoryWords`, else `other`.
+- `keywords` exist so animal products are never missed; explicit entries fix false hits (coconut milk, peanut butter, beef tomato, vegan butter).
+- `ingredientTable` returns parents before children and throws on cycles.
+
+## Recipe text (`recipes.ts`)
+- `splitInstructions`: one step per line, "STEP n" labels and "n." numbering removed; a single paragraph over 400 chars is split into sentences.
+- `estimateCookTime`: 5 + 1.5 min per ingredient + every mentioned duration (upper bound of ranges, each capped at 240), rounded to 5, clamped 10–300.
 
 ## Deck (`buildDeck`)
 - Filter by **my own** expanded exclusions only; never drop a recipe because of the partner.

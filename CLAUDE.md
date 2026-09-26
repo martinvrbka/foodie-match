@@ -26,7 +26,8 @@ npm run db:push                # apply new migrations to the cloud project (need
 npm run typecheck              # tsc --noEmit
 npx expo-doctor                # dependency/config sanity
 npx expo install <pkg>         # add deps (never plain npm install <pkg>)
-npm run seed                   # import TheMealDB recipes (needs SUPABASE_SECRET_KEY in .env) — Phase 2
+npm run seed                   # import/refresh TheMealDB recipes into the cloud project (SUPABASE_SECRET_KEY in .env); safe to re-run
+npm run seed -- --local        # same, into the local Supabase
 # Local APK (Phase 8, needs JDK 17 + Android SDK):
 npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease)
 ```
@@ -39,8 +40,8 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 - `src/data/` — Supabase client, auth, queries, realtime hooks, error → string mapping, generated DB types.
 - `src/components/` — reusable UI (buttons, fields, later card stack and chips).
 - `supabase/migrations/` — schema, RLS, triggers, RPCs as SQL. `supabase/tests/` — DB integration tests (`npm run test:db`).
-- `scripts/seed/` — TheMealDB import (Node, run locally) *(Phase 2)*.
-- `data/` — `ingredient-map.json`: synonyms, categories, parents *(Phase 2)*.
+- `scripts/` — `seed/themealdb.ts` (recipe import, plain Node 24 with type stripping; imports `src/logic/*.ts` with `.ts` extensions) and `db-push.sh`.
+- `data/ingredient-map.json` — synonyms, categories, parents, keywords, per-recipe fixes. Reviewed by tests in `src/logic/__tests__/ingredients.test.ts`.
 - `assets/` — app icons and splash.
 
 ## Conventions

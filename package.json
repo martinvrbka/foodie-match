@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
+    "@types/node": "^24",
     "expo": "~57.0.25",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.19",
@@ -38,7 +39,7 @@
     "android": "expo start --android",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "seed": "node --experimental-strip-types scripts/seed/themealdb.ts",
+    "seed": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed/themealdb.ts",
     "prepare": "git config core.hooksPath .githooks || true",
     "test:db": "jest -c jest.db.config.js --runInBand",
     "db:types": "supabase gen types typescript --local > src/data/database.types.ts",

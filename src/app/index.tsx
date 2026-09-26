@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +39,7 @@ export default function Home() {
             </Text>
           </>
         )}
+        <Button label={t('recipes.browse')} onPress={() => router.push('/recipes')} />
         {signOutError ? <Text style={styles.body}>{signOutError}</Text> : null}
         <Button
           label={t('auth.signOut')}

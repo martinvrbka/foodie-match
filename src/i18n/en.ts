@@ -31,6 +31,18 @@ export const en = {
     pairingSoon: 'Pairing with your partner comes in the next update.',
     pairedWith: "You're paired with {name}.",
   },
+  recipes: {
+    browse: 'Browse recipes',
+    title: 'Recipes',
+    count: '{count} recipes',
+    minutes: '{min} min',
+    minutesEstimated: 'about {min} min',
+    ingredients: 'Ingredients',
+    steps: 'Steps',
+    back: 'Back',
+    notFound: "This recipe doesn't exist anymore.",
+    photo: 'Photo of {title}',
+  },
   errors: {
     network: "Can't reach the server. Check your internet connection and try again.",
     invalidCredentials: 'Wrong email or password.',

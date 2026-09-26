@@ -14,6 +14,16 @@ describe('not signed in', () => {
 });
 
 describe('signed in', () => {
+  it('can read a recipe with its ingredient lines (recipe detail query)', async () => {
+    const a = await signUp('a');
+    const garlic = await ingredient('garlic');
+    const r = await recipe([garlic]);
+    const { data } = await ok(
+      a.client.from('recipes').select('id, recipe_ingredients (raw_text, position)').eq('id', r).single(),
+    );
+    expect(data!.recipe_ingredients).toEqual([{ raw_text: 'line 0', position: 0 }]);
+  });
+
   it('sees only own profile until paired', async () => {
     const [a] = [await signUp('a'), await signUp('b')];
     const { data } = await ok(a.client.from('profiles').select('id'));
