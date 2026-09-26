@@ -1,14 +1,16 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
 import { InviteCard } from '../components/InviteCard';
 import { signOut, useAuth } from '../data/auth';
 import { errorText } from '../data/errors';
+import { matchesLastSeen, useMatchList } from '../data/matches';
 import { useInvites } from '../data/pairing';
 import { useProfile } from '../data/profile';
 import { t } from '../i18n';
+import { countNewMatches } from '../logic/matches';
 import { colors, font, radius, spacing } from '../theme/tokens';
 
 export default function Home() {
@@ -16,6 +18,14 @@ export default function Home() {
   const userId = session!.user.id;
   const { me, partner, loading, error, reload } = useProfile();
   const invites = useInvites(userId);
+  const { matches } = useMatchList();
+  // Re-read "last seen" whenever Home is shown again (e.g. back from Matches).
+  const [lastSeen, setLastSeen] = useState(() => matchesLastSeen(userId));
+  useFocusEffect(useCallback(() => setLastSeen(matchesLastSeen(userId)), [userId]));
+  const newMatches = countNewMatches(
+    (matches ?? []).map((m) => ({ recipeId: m.recipe.id, createdAt: m.createdAt, cookTimeMin: null, cuisine: null })),
+    lastSeen,
+  );
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
   // First run: ask what they don't eat before anything else.
@@ -61,6 +71,20 @@ export default function Home() {
         )}
 
         <Button label={t('discover.title')} onPress={() => router.push('/discover')} />
+        {partner ? (
+          <View>
+            <Button
+              label={t('matches.button', { count: matches?.length ?? 0 })}
+              variant="text"
+              onPress={() => router.push('/matches')}
+            />
+            {newMatches > 0 ? (
+              <Text style={styles.newBadge} accessibilityRole="alert">
+                {t('matches.newCount', { count: newMatches })}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
         <Button label={t('exclusions.title')} variant="text" onPress={() => router.push('/exclusions')} />
         <Button label={t('recipes.browse')} variant="text" onPress={() => router.push('/recipes')} />
         {signOutError ? <Text style={styles.body}>{signOutError}</Text> : null}
@@ -88,6 +112,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.success,
     alignItems: 'flex-start',
+  },
+  newBadge: {
+    alignSelf: 'center',
+    marginTop: -spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+    backgroundColor: colors.accent,
+    color: colors.onAccent,
+    fontSize: font.small,
+    fontWeight: '700',
   },
   pairedText: { fontSize: font.body, fontWeight: '700', color: colors.text },
 });

@@ -48,7 +48,9 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — The deck is rebuilt only when exclusions changed** since it was built (not on every return from a recipe), so the top card stays put.
 - **2026-09-26 — "It's a match!" on both phones**: the swiping phone from the RPC result, the partner's via realtime INSERT on `matches`. `matches.via` (`swipe` | `retroactive`) keeps retroactive matches from triggering the full-screen celebration. Each recipe is celebrated once per app session, over any screen (global overlay).
 - **2026-09-26 — Recipe list filters: All / Liked / Nope / Matches** (my discover swipes, our visible matches). Exclusions never hide recipes there.
-- **2026-09-26 — Retroactive matches show a small "N new matches" banner**; the full "It's a match!" animation is for live swipes only.
+- **2026-09-26 — "N new!" on the Matches button** counts matches (live or retroactive) created after the newest match I last saw on the Matches screen. Stored per device in localStorage and compared with server timestamps, so phone clock skew doesn't matter. The full "It's a match!" animation is for live swipes only.
+- **2026-09-26 — Removing a match**: long-press a tile on Matches, or "Remove from matches" on the recipe; always confirmed. It disappears for both (realtime) and is never re-created.
+- **2026-09-26 — Matches filters: cook time (any / ≤30 / ≤45 / ≤60 min; unknown cook time only under "any") and cuisine** (only cuisines present in our matches).
 - **2026-09-26 — Match rule implemented twice:** pure TS `isMatch()` is the tested spec; a mirrored SQL function runs in triggers (needed for realtime on both phones). Change both together.
 
 ## Tonight

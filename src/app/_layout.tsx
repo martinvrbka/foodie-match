@@ -26,6 +26,7 @@ function Routes() {
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="index" />
         <Stack.Screen name="discover" />
+        <Stack.Screen name="matches" />
         <Stack.Screen name="pair" />
         <Stack.Screen name="scan" />
         <Stack.Screen name="exclusions" />

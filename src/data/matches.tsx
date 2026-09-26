@@ -64,3 +64,91 @@ export function MatchProvider({ children }: { children: ReactNode }) {
 }
 
 export const useMatchCelebration = () => useContext(MatchContext);
+
+export interface MatchRow {
+  recipe: RecipeSummary;
+  createdAt: string;
+}
+
+/** Our visible matches (removed and now-excluded ones are hidden), live-updated. */
+export function useMatchList() {
+  const { me } = useProfile();
+  const coupleId = me?.couple_id ?? null;
+  const [matches, setMatches] = useState<MatchRow[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  const load = useCallback(async () => {
+    if (!coupleId) {
+      setMatches([]);
+      return;
+    }
+    try {
+      const [recipes, rows] = await Promise.all([
+        cachedRecipes(),
+        supabase.from('visible_matches').select('recipe_id, created_at'),
+      ]);
+      if (rows.error) throw rows.error;
+      const byId = new Map(recipes.map((r) => [r.id, r]));
+      setMatches(
+        rows.data.flatMap((row) => {
+          const recipe = row.recipe_id === null ? undefined : byId.get(row.recipe_id);
+          return recipe && row.created_at ? [{ recipe, createdAt: row.created_at }] : [];
+        }),
+      );
+      setError(null);
+    } catch (e) {
+      setError(e);
+    }
+  }, [coupleId]);
+
+  useEffect(() => {
+    load();
+    if (!coupleId) return;
+    const channel = supabase
+      .channel(`match-list-${coupleId}-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches', filter: `couple_id=eq.${coupleId}` }, () =>
+        load(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [coupleId, load]);
+
+  return { matches, error, reload: load };
+}
+
+/** Hides a match for both of us; it is never re-created. */
+export async function removeMatch(recipeId: number) {
+  const { error } = await supabase.rpc('remove_match', { p_recipe_id: recipeId });
+  if (error) throw error;
+}
+
+/** Whether this recipe is currently one of our visible matches. */
+export async function isVisibleMatch(recipeId: number): Promise<boolean> {
+  const { count, error } = await supabase
+    .from('visible_matches')
+    .select('recipe_id', { count: 'exact', head: true })
+    .eq('recipe_id', recipeId);
+  if (error) throw error;
+  return (count ?? 0) > 0;
+}
+
+// When I last opened the Matches screen, per device (for "N new matches").
+const seenKey = (userId: string) => `matchesLastSeen:${userId}`;
+
+export function matchesLastSeen(userId: string): string | null {
+  try {
+    return localStorage.getItem(seenKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+export function markMatchesSeen(userId: string, at: string) {
+  try {
+    localStorage.setItem(seenKey(userId), at);
+  } catch {
+    // Not critical: the count just stays until next time.
+  }
+}

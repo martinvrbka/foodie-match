@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../../components/Button';
 import { RecipeMeta } from '../../components/RecipeMeta';
 import { useAuth } from '../../data/auth';
 import { errorText } from '../../data/errors';
 import { useExclusionStates } from '../../data/exclusions';
+import { isVisibleMatch, removeMatch } from '../../data/matches';
 import { useProfile } from '../../data/profile';
 import { getRecipe, photoUrl, type RecipeDetail } from '../../data/recipes';
 import { t } from '../../i18n';
@@ -23,9 +24,13 @@ export default function Recipe() {
   const [recipe, setRecipe] = useState<RecipeDetail | null | undefined>(undefined);
   const [error, setError] = useState<unknown>(null);
 
+  const [matched, setMatched] = useState(false);
+  const [removeError, setRemoveError] = useState<unknown>(null);
+
   const load = useCallback(() => {
     setError(null);
     getRecipe(Number(id)).then(setRecipe, setError);
+    isVisibleMatch(Number(id)).then(setMatched, () => setMatched(false));
   }, [id]);
   useEffect(load, [load]);
 
@@ -117,6 +122,29 @@ export default function Recipe() {
             })}
           </View>
 
+          {matched ? (
+            <View style={styles.removeRow}>
+              {removeError ? <Text style={styles.excludedNote}>{errorText(removeError)}</Text> : null}
+              <Button
+                label={t('matches.remove')}
+                variant="text"
+                onPress={() =>
+                  Alert.alert(t('matches.removeTitle', { title: recipe.title }), t('matches.removeBody'), [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('matches.remove'),
+                      style: 'destructive',
+                      onPress: () => {
+                        setRemoveError(null);
+                        removeMatch(recipe.id).then(() => setMatched(false), setRemoveError);
+                      },
+                    },
+                  ])
+                }
+              />
+            </View>
+          ) : null}
+
           <Text style={styles.heading}>{t('recipes.steps')}</Text>
           {recipe.instructions.map((step, i) => (
             <View key={i} style={styles.step}>
@@ -171,6 +199,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryStrong,
     backgroundColor: colors.surface,
   },
+  removeRow: { alignItems: 'flex-start', marginTop: spacing.sm },
   partnerBadge: {
     alignSelf: 'flex-start',
     marginTop: spacing.sm,
