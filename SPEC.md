@@ -16,7 +16,7 @@ Personal MVP for 2 users. Optimize for working end-to-end and feeling good to us
 
 ## Tech stack
 - **Expo (React Native) + TypeScript**, Expo Router, **Android only** (no iOS-specific effort).
-- **Supabase (free tier)**: auth, Postgres, Row Level Security, Realtime. No external SMTP. *(Auth method: see DECISIONS.md.)*
+- **Supabase (free tier)**: auth, Postgres, Row Level Security, Realtime. No external SMTP. Auth = email + password, no confirmation email (see DECISIONS.md).
 - Distribution: sideloadable **APK built locally** (`npx expo prebuild` + Gradle, or `eas build --platform android --profile preview --local`). No EAS cloud builds, no Play Store. Exact steps in README.
 - README notes that free Supabase projects pause after ~1 week of inactivity and how to resume.
 - `react-native-gesture-handler` + `react-native-reanimated` for swipe cards.

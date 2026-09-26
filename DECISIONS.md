@@ -6,7 +6,7 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — `primaryStrong` `#C8431F` for CTA buttons.** Brand `#E4572E` with white text is ~3.7:1 (fails AA for normal text); it stays for icons and large bold text. Dark text on saffron/mustard/herb. Enforced by `src/theme/__tests__/contrast.test.ts`.
 
 ## Auth
-- **2026-09-26 — No magic links.** `exp://` deep links in Expo Go differ per device; sign-in must work by typing into the app. Exact method (email OTP code vs email+password without confirmation) is **open**, pending the Supabase setup choice.
+- **2026-09-26 — Email + password sign-in, "Confirm email" off.** No magic links (`exp://` deep links differ per device in Expo Go) and no emailed OTP codes (free-tier built-in email allows only a few sends/hour). The app never sends email.
 
 ## Recipes & ingredients
 - **2026-09-26 — Cook times are estimated and flagged.** TheMealDB has none; estimate from category, ingredient count and instruction length; `cook_time_estimated = true`.
