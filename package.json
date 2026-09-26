@@ -4,7 +4,6 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@supabase/supabase-js": "^2.109.0",
-    "@types/jest": "29.5.14",
     "expo": "~57.0.25",
     "expo-camera": "~57.0.5",
     "expo-constants": "~57.0.19",
@@ -15,8 +14,6 @@
     "expo-router": "~57.0.23",
     "expo-sqlite": "~57.0.3",
     "expo-status-bar": "~57.0.1",
-    "jest": "~29.7.0",
-    "jest-expo": "~57.0.5",
     "react": "19.2.3",
     "react-dom": "^19.2.3",
     "react-native": "0.86.3",
@@ -40,13 +37,14 @@
     "android": "expo start --android",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "seed": "node --experimental-strip-types scripts/seed/themealdb.ts"
+    "seed": "node --experimental-strip-types scripts/seed/themealdb.ts",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "private": true,
   "jest": {
     "preset": "jest-expo",
     "testMatch": [
-      "**/__tests__/**/*.test.ts"
+      "**/__tests__/**/*.test.ts?(x)"
     ]
   }
 }

@@ -49,6 +49,16 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 - If the SQL match function changes, update `isMatch()` in `src/logic/` too (and vice versa).
 - Record assumptions in `DECISIONS.md` rather than guessing silently.
 
+## Testing rules
+- Every change to business logic (filtering, matching, ranking, ingredient normalization) must include unit tests. Keep this logic in pure functions so it's testable without UI or DB.
+- DB-side logic (RLS policies, match trigger/RPC) must have integration tests against local Supabase.
+- UI: only a few tests for critical flows (swipe saves like, pairing, Tonight winner). No snapshot tests.
+- Bug fixes: first write a failing test that reproduces the bug, then fix it.
+- Never modify or delete an existing test to make it pass without explicitly telling me why.
+- `npm test` must pass before every commit (enforced by `.githooks/pre-commit`).
+- Test behavior and edge cases (empty deck, unpaired user, ties, exclusion changes), not coverage percentages.
+- A phase is done only when all tests pass and new logic has tests.
+
 ## Definition of done (every phase)
 1. App runs in Expo Go; `npm test` and `npm run typecheck` pass.
 2. Tests added/updated for any business logic touched.
