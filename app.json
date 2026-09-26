@@ -1,25 +1,36 @@
 {
   "expo": {
-    "name": "foodie-match",
+    "name": "Foodie Match",
     "slug": "foodie-match",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFF8F0",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.martin.foodiematch"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sqlite",
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Foodie Match uses the camera to scan your partner’s pairing QR code."
+        }
+      ]
+    ],
+    "scheme": "foodiematch",
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }
