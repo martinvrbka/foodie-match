@@ -7,6 +7,10 @@ const PAGE = 1000;
 
 let ingredientsCache: Promise<Ingredient[]> | null = null;
 
+let version = 0;
+/** Bumped whenever I change my exclusions, so Discover knows to rebuild its deck. */
+export const exclusionsVersion = () => version;
+
 /** Ingredients change only when the seed runs, so load them once per app session. */
 export function cachedIngredients(): Promise<Ingredient[]> {
   ingredientsCache ??= listIngredients().catch((e) => {
@@ -98,6 +102,7 @@ export function useExclusions(userId: string): Exclusions {
     remove.forEach((id) => next.delete(id));
     setExplicit(next);
     setSaveError(null);
+    version++;
     save(add, remove).catch((e) => {
       setExplicit(before);
       setSaveError(e);

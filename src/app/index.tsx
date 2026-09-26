@@ -44,7 +44,8 @@ export default function Home() {
             </Text>
           </>
         )}
-        <Button label={t('exclusions.title')} onPress={() => router.push('/exclusions')} />
+        <Button label={t('discover.title')} onPress={() => router.push('/discover')} />
+        <Button label={t('exclusions.title')} variant="text" onPress={() => router.push('/exclusions')} />
         <Button label={t('recipes.browse')} variant="text" onPress={() => router.push('/recipes')} />
         {signOutError ? <Text style={styles.body}>{signOutError}</Text> : null}
         <Button

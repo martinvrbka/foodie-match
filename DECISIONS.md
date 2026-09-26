@@ -42,6 +42,10 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Discover swipes go through RPC `discover_swipe`** (they can create matches); clients have no direct write access to `swipes`/`matches`. A second swipe on the same recipe is ignored (only undo changes one).
 - **2026-09-26 — Undo = last discover swipe only** (the client allows one step). Undoing a like deletes that recipe's match unless the user removed it (removed rows stay so they're never re-created).
 - **2026-09-26 — Matches are hidden, not deleted.** A `matches` row = both liked + compatible when created; view `visible_matches` applies both partners' current exclusions at read time. User-removed matches get `removed_at` and are never re-created.
+- **2026-09-26 — Discover saves each swipe right away; if saving fails the card comes back on top** with an error. Undo waits for the pending save, then calls the undo RPC.
+- **2026-09-26 — The deck is rebuilt only when exclusions changed** since it was built (not on every return from a recipe), so the top card stays put.
+- **2026-09-26 — "It's a match!" shows on the swiping phone from the RPC result.** The partner's phone learns about it via realtime in the Matches phase.
+- **2026-09-26 — Recipe list filters: All / Liked / Nope / Matches** (my discover swipes, our visible matches). Exclusions never hide recipes there.
 - **2026-09-26 — Retroactive matches show a small "N new matches" banner**; the full "It's a match!" animation is for live swipes only.
 - **2026-09-26 — Match rule implemented twice:** pure TS `isMatch()` is the tested spec; a mirrored SQL function runs in triggers (needed for realtime on both phones). Change both together.
 
@@ -59,6 +63,8 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Node 24 LTS via nvm, pinned in `.nvmrc`.** Node 20 is EOL and lacks the WebSocket global supabase-js needs outside the app.
 - **2026-09-26 — DB integration tests use Jest + supabase-js against local Supabase in Docker** (`npm run test:db`), signing up real test users. Separate from `npm test` so commits don't need Docker. They run with plain babel, not the `jest-expo` preset, whose React Native polyfills break `fetch` in Node.
 - **2026-09-26 — Local Supabase: storage, edge functions and analytics disabled; sign-up rate limit raised** (tests create many users). Cloud settings are unaffected.
+- **2026-09-26 — Screen tests live in `src/__tests__/`** (every file under `src/app/` becomes a route). They use React Native Testing Library 14 (async `render`) with the data layer and the animated card mocked.
+- **2026-09-26 — `expo-asset` is a direct dependency**: `expo-sqlite` imports it, and only Metro found the copy nested inside `expo`.
 - **2026-09-26 — Seed script runs on plain Node 24 type stripping** (no tsx/ts-node); `tsconfig` allows `.ts` import extensions so it type-checks with the app.
 - **2026-09-26 — A temporary recipe list screen** gives access to recipe details until Discover exists. It is deliberately unfiltered; browse filters come after swiping works.
 - **2026-09-26 — Recipe detail marks what I don't eat**: a notice at the top and "You don't eat: Seafood" on each affected line (explicit or via a parent). The partner's exclusions aren't shown there yet.

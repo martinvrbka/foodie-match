@@ -1,46 +1,84 @@
-// Plain list of all recipes. Temporary way in to the detail screen until
-// the Discover card stack exists.
+// All recipes, unfiltered by exclusions, with filters for my swipes and our matches.
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
+import { Chip } from '../components/Chip';
+import { useAuth } from '../data/auth';
+import { cachedRecipes, loadMyRecipeMarks, type SwipeFilter } from '../data/discover';
 import { RecipeMeta } from '../components/RecipeMeta';
 import { errorText } from '../data/errors';
-import { listRecipes, photoUrl, type RecipeSummary } from '../data/recipes';
+import { photoUrl, type RecipeSummary } from '../data/recipes';
 import { t } from '../i18n';
 import { colors, font, radius, spacing } from '../theme/tokens';
 
+const FILTERS: { key: SwipeFilter; label: 'recipes.filterAll' | 'recipes.filterLiked' | 'recipes.filterNope' | 'recipes.filterMatches' }[] = [
+  { key: 'all', label: 'recipes.filterAll' },
+  { key: 'liked', label: 'recipes.filterLiked' },
+  { key: 'nope', label: 'recipes.filterNope' },
+  { key: 'matches', label: 'recipes.filterMatches' },
+];
+
+type Marks = Awaited<ReturnType<typeof loadMyRecipeMarks>>;
+
 export default function Recipes() {
+  const { session } = useAuth();
+  const userId = session!.user.id;
   const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
+  const [marks, setMarks] = useState<Marks | null>(null);
+  const [filter, setFilter] = useState<SwipeFilter>('all');
   const [error, setError] = useState<unknown>(null);
 
   const load = useCallback(() => {
     setError(null);
-    listRecipes().then(setRecipes, setError);
+    cachedRecipes().then(setRecipes, setError);
   }, []);
   useEffect(load, [load]);
+  // Swipes change in Discover, so refresh the marks whenever this screen is shown.
+  useFocusEffect(
+    useCallback(() => {
+      loadMyRecipeMarks(userId).then(setMarks, setError);
+    }, [userId]),
+  );
+
+  const shown = useMemo(() => {
+    if (!recipes || filter === 'all') return recipes;
+    if (!marks) return null;
+    return recipes.filter((r) => marks[filter].has(r.id));
+  }, [recipes, marks, filter]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Button label={`‹ ${t('recipes.back')}`} variant="text" onPress={() => router.back()} />
         <Text style={styles.title}>{t('recipes.title')}</Text>
-        {recipes ? <Text style={styles.count}>{t('recipes.count', { count: recipes.length })}</Text> : null}
+        {shown ? <Text style={styles.count}>{t('recipes.count', { count: shown.length })}</Text> : null}
+      </View>
+      <View style={styles.filters}>
+        {FILTERS.map((f) => (
+          <Chip
+            key={f.key}
+            label={f.key === 'all' || !marks ? t(f.label) : `${t(f.label)} (${marks[f.key].size})`}
+            selected={filter === f.key}
+            onPress={() => setFilter(f.key)}
+          />
+        ))}
       </View>
       {error ? (
         <View style={styles.center}>
           <Text style={styles.body}>{errorText(error)}</Text>
           <Button label={t('common.retry')} onPress={load} />
         </View>
-      ) : !recipes ? (
+      ) : !shown ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primaryStrong} />
         </View>
       ) : (
         <FlatList
-          data={recipes}
+          data={shown}
+          ListEmptyComponent={<Text style={[styles.body, styles.emptyList]}>{t('recipes.filterEmpty')}</Text>}
           keyExtractor={(r) => String(r.id)}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
@@ -75,6 +113,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: 'flex-start' },
   title: { fontSize: font.hero, fontWeight: '800', color: colors.text, paddingHorizontal: spacing.sm },
   count: { fontSize: font.small, color: colors.textMuted, paddingHorizontal: spacing.sm },
+  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.md },
+  emptyList: { paddingTop: spacing.xl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   body: { fontSize: font.body, color: colors.text, textAlign: 'center' },
   list: { padding: spacing.md, gap: spacing.sm },

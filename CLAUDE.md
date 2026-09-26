@@ -38,7 +38,8 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 - `src/theme/` — color/spacing tokens and WCAG contrast checker.
 - `src/i18n/` — all UI strings (`en.ts`) and `t()`.
 - `src/data/` — Supabase client, auth, queries, realtime hooks, error → string mapping, generated DB types.
-- `src/components/` — reusable UI (buttons, fields, later card stack and chips).
+- `src/components/` — reusable UI (buttons, fields, chips, swipe card).
+- `src/__tests__/` — screen tests for critical flows (not under `src/app/`, which would make them routes).
 - `supabase/migrations/` — schema, RLS, triggers, RPCs as SQL. `supabase/tests/` — DB integration tests (`npm run test:db`).
 - `scripts/` — `seed/themealdb.ts` (recipe import, plain Node 24 with type stripping; imports `src/logic/*.ts` with `.ts` extensions) and `db-push.sh`.
 - `data/ingredient-map.json` — synonyms, categories, parents, keywords, per-recipe fixes. Reviewed by tests in `src/logic/__tests__/ingredients.test.ts`.

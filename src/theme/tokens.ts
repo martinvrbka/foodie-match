@@ -54,6 +54,11 @@ export const textPairs: { fg: string; bg: string; large?: boolean; name: string 
   { name: 'white on photo gradient (black 70%)', fg: colors.onPhoto, bg: '#4D4D4D' },
 ];
 
+/** Bottom gradient on food photos; its darkest stop backs the white text (see textPairs). */
+export const gradients = {
+  photo: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.8)'] as const,
+};
+
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 } as const;
 export const radius = { sm: 8, md: 16, lg: 24, pill: 999 } as const;
 export const font = {

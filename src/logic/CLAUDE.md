@@ -26,7 +26,7 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - Filter by **my own** expanded exclusions only; never drop a recipe because of the partner.
 - Remove recipes I already swiped in `discover`.
 - Recipes the partner can't eat (their expanded exclusions) go **after** all others and carry a partner-excluded flag.
-- Among recipes both can eat: partner-liked-but-unseen ones are interleaved (about every 3rd card while any remain); the rest is shuffled with the injected RNG.
+- Among recipes both can eat: partner-liked-but-unseen ones take every 3rd position (index 2, 5, 8…) while any remain; the rest is shuffled with the injected RNG.
 - Unpaired ⇒ no partner flag and no partner ordering.
 
 ## Match (`match.ts`: `expandExclusions`, `isCompatible`, `isMatch`)
