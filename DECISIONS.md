@@ -1,41 +1,45 @@
-# Decisions & assumptions
+# Decisions
 
-Decisions made where the spec was ambiguous. Confirmed with Martin before starting (2026-09-26) unless marked *(later)*.
+Short, dated. Read before changing business rules. Replace entries that become outdated instead of appending contradictions.
 
 ## Design
-1. **Contrast vs brand red.** `#E4572E` with white text is ~3.7:1 (fails AA for normal text). It stays the brand/like color for icons and large bold text (>= 18.66px bold, 3:1 is enough). CTA buttons with normal-size labels use `primaryStrong` `#C8431F` (~4.9:1). Text on saffron, mustard and herb green is dark (`#2B2118`). All pairs are checked by `src/theme/__tests__/contrast.test.ts`.
+- **2026-09-26 — `primaryStrong` `#C8431F` for CTA buttons.** Brand `#E4572E` with white text is ~3.7:1 (fails AA for normal text); it stays for icons and large bold text. Dark text on saffron/mustard/herb. Enforced by `src/theme/__tests__/contrast.test.ts`.
 
 ## Auth
-2. **Email OTP code, not magic link.** Magic links need `exp://` deep links in Expo Go, which differ per device. The user types a 6-digit code from the email instead. Requires `{{ .Token }}` in the Supabase "Magic Link" email template (see README).
-3. Supabase's built-in email only delivers to members of the Supabase organisation and is rate-limited (~2/hour). The partner's email is added as an org member. Sessions persist, so sign-ins are rare.
+- **2026-09-26 — No magic links.** `exp://` deep links in Expo Go differ per device; sign-in must work by typing into the app. Exact method (email OTP code vs email+password without confirmation) is **open**, pending the Supabase setup choice.
 
 ## Recipes & ingredients
-4. TheMealDB has no cook times: every cook time is **estimated** (category, ingredient count, instruction length) and flagged with `cook_time_estimated = true`.
-5. TheMealDB instructions are one text blob; the seed script splits them into steps (`recipes.instructions text[]`).
-6. Photos are referenced by TheMealDB image URL (not copied into Supabase Storage).
-7. Ingredient hierarchy is **single-parent** (`ingredients.parent_id`): bacon → pork → meat, chicken stock → chicken → meat, butter → dairy. Only explicit exclusions are stored; descendants are expanded when filtering. The "vegetarian" preset = `meat` + `seafood`.
-8. Synonyms, categories and parents live in `data/ingredient-map.json` (reviewable).
+- **2026-09-26 — Cook times are estimated and flagged.** TheMealDB has none; estimate from category, ingredient count and instruction length; `cook_time_estimated = true`.
+- **2026-09-26 — Instructions stored as `text[]` steps**, split from TheMealDB's single text blob by the seed script.
+- **2026-09-26 — Photos by TheMealDB URL**, not copied to Supabase Storage (keeps free-tier storage empty).
+- **2026-09-26 — Single-parent ingredient hierarchy** (`ingredients.parent_id`): bacon → pork → meat, butter → dairy. Only explicit exclusions are stored; descendants are expanded at filter time. Vegetarian preset = `meat` + `seafood`.
+- **2026-09-26 — Synonyms/categories/parents in `data/ingredient-map.json`** so the mapping is reviewable in one place.
 
 ## Pairing
-9. Pairing codes: 6 characters from an alphabet without 0/O/1/I/L. Pairing actions (redeem code, send/accept invite, unpair) are SECURITY DEFINER RPCs.
-10. Accepting an invite declines your other pending invites.
-11. Swiping before pairing is allowed; no partner badges/ordering until paired. When a couple forms, matches are evaluated from existing swipe history.
-12. Unpairing sets `couples.dissolved_at`, deletes that couple's matches, keeps swipes and cooked history. Re-pairing recomputes matches from swipes.
+- **2026-09-26 — Pairing codes: 6 chars, no 0/O/1/I/L.** Readable when typed by hand.
+- **2026-09-26 — Pairing actions are SECURITY DEFINER RPCs.** Under RLS, B can't read A's code/invite rows directly.
+- **2026-09-26 — Accepting an invite declines your other pending invites.** A user can only be in one couple.
+- **2026-09-26 — Swiping before pairing is allowed.** No partner badge/ordering until paired; pairing evaluates matches from existing swipe history.
+- **2026-09-26 — Unpair = `couples.dissolved_at` + delete that couple's matches.** Swipes and cooked history stay; re-pairing recomputes matches.
 
 ## Discover & matching
-13. Deck is computed on the phone by the pure `buildDeck()` (~300 recipes load once), so exclusion changes apply instantly.
-14. "Mixed in" ordering: roughly every 3rd card is a partner-liked recipe while any remain; the rest is random (RNG injected for tests).
-15. Undo applies only to the last discover swipe. Undoing a like that created a match deletes the match.
-16. **Matches are hidden, not deleted.** A `matches` row = both liked + compatible when created. The `visible_matches` view filters by both partners' current exclusions, so adding an exclusion hides a match and removing it brings it back. A user-removed match gets `removed_at` and is never re-created.
-17. Retroactive matches (exclusion removed, or pairing after solo swiping) show a small "N new matches" banner; the full "It's a match!" animation is for live swipes.
-18. The match rule exists twice: pure TS `isMatch()` (the tested spec) and a mirrored SQL function used by triggers (needed for realtime on both phones).
+- **2026-09-26 — Deck built on the phone** by pure `buildDeck()` (~300 recipes load once) so exclusion changes apply instantly.
+- **2026-09-26 — "Mixed in" = roughly every 3rd card is partner-liked** while any remain; otherwise random (RNG injected for tests).
+- **2026-09-26 — Undo = last discover swipe only.** Undoing a like that created a match deletes that match.
+- **2026-09-26 — Matches are hidden, not deleted.** A `matches` row = both liked + compatible when created; view `visible_matches` applies both partners' current exclusions at read time. User-removed matches get `removed_at` and are never re-created.
+- **2026-09-26 — Retroactive matches show a small "N new matches" banner**; the full "It's a match!" animation is for live swipes only.
+- **2026-09-26 — Match rule implemented twice:** pure TS `isMatch()` is the tested spec; a mirrored SQL function runs in triggers (needed for realtime on both phones). Change both together.
 
 ## Tonight
-19. One active session per couple; it can be cancelled.
-20. 0 recipes liked by both → show recipes liked by at least one; the first tap by either partner is the winner. "Reshuffle" = new swipe round. If nobody liked anything, only reshuffle.
-21. Shortlist > 5 → each picks a top 5, and the **union (up to 10)** goes to ranking.
-22. The winner is computed by the last partner to finish, using the pure Borda function (random tie-break), and saved via an RPC that only accepts the first write. Both phones get it via realtime.
-23. Cooked history = sessions with `status = 'done'`.
+- **2026-09-26 — One active session per couple**, cancellable.
+- **2026-09-26 — 0 liked by both → first tap by either partner wins**; "Reshuffle" starts a new swipe round; if nobody liked anything, only reshuffle.
+- **2026-09-26 — Shortlist > 5 → union of both top-5s (up to 10) is ranked.** The spec's "max 5" and "union of top 5s" conflict; union chosen.
+- **2026-09-26 — Winner computed by the last partner to finish** with the pure Borda function (random tie-break), saved via an RPC that accepts only the first write; both phones receive it via realtime. Avoids a second Borda implementation in SQL.
+- **2026-09-26 — Cooked history = sessions with `status = 'done'`.** No separate table.
 
 ## Tooling
-24. Expo SDK 57, routes in `src/app/` (scaffold default). `react-dom` pinned to the React version to satisfy an optional peer dep.
+- **2026-09-26 — Expo SDK 57, routes in `src/app/`** (scaffold default).
+- **2026-09-26 — `react-dom` pinned to the React version**: an optional peer dep otherwise breaks `npx expo install`.
+- **2026-09-26 — TS 6 needs `"types": ["jest"]`** in `tsconfig.json`; it no longer auto-includes `@types/*`.
+- **2026-09-26 — Node via nvm** (`source ~/.nvm/nvm.sh` in non-login shells).
+- **2026-09-26 — Private GitHub repo `martinvrbka/foodie-match`**; push after every phase.
