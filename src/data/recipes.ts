@@ -1,3 +1,4 @@
+import { formatIngredientLine } from '../logic/recipes';
 import { supabase } from './supabase';
 
 export interface RecipeSummary {
@@ -10,9 +11,17 @@ export interface RecipeSummary {
   category: string | null;
 }
 
+export interface IngredientLine {
+  /** Ingredient as written in the recipe ("Raw tiger prawns"). */
+  name: string;
+  /** Amount or purpose ("150g", "For frying"); may be empty. */
+  detail: string;
+  ingredientId: number;
+}
+
 export interface RecipeDetail extends RecipeSummary {
   instructions: string[];
-  ingredients: string[];
+  ingredients: IngredientLine[];
 }
 
 const SUMMARY = 'id, title, image_url, cook_time_min, cook_time_estimated, cuisine, category';
@@ -36,7 +45,7 @@ export async function listRecipes(): Promise<RecipeSummary[]> {
 export async function getRecipe(id: number): Promise<RecipeDetail | null> {
   const { data, error } = await supabase
     .from('recipes')
-    .select(`${SUMMARY}, instructions, recipe_ingredients (raw_text, position)`)
+    .select(`${SUMMARY}, instructions, recipe_ingredients (raw_text, name, measure, position, ingredient_id)`)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -44,7 +53,13 @@ export async function getRecipe(id: number): Promise<RecipeDetail | null> {
   const { recipe_ingredients, ...recipe } = data;
   return {
     ...recipe,
-    ingredients: [...recipe_ingredients].sort((a, b) => a.position - b.position).map((i) => i.raw_text),
+    ingredients: [...recipe_ingredients]
+      .sort((a, b) => a.position - b.position)
+      .map((i) => ({
+        // Lines without separate name/measure (other sources) show the full line.
+        ...formatIngredientLine(i.name ?? i.raw_text, i.measure ?? ''),
+        ingredientId: i.ingredient_id,
+      })),
   };
 }
 

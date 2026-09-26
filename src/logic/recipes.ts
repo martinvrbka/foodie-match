@@ -38,3 +38,15 @@ export function estimateCookTime(instructions: string, ingredientCount: number):
   const total = Math.round((prep + mentioned) / 5) * 5;
   return Math.min(300, Math.max(10, total));
 }
+
+const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * One ingredient line for display: the ingredient as written in the source, and
+ * its measure or purpose ("Vegetable oil" · "For frying"). Casing is kept except
+ * the first letter.
+ */
+export function formatIngredientLine(name: string, measure: string): { name: string; detail: string } {
+  return { name: capitalize(tidy(name)), detail: capitalize(tidy(measure)) };
+}

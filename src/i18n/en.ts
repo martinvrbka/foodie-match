@@ -79,6 +79,8 @@ export const en = {
     back: 'Back',
     notFound: "This recipe doesn't exist anymore.",
     photo: 'Photo of {title}',
+    containsExcluded: "Contains something you don't eat",
+    excludedBecause: "You don't eat: {name}",
   },
   errors: {
     network: "Can't reach the server. Check your internet connection and try again.",

@@ -1,4 +1,4 @@
-import { estimateCookTime, splitInstructions } from '../recipes';
+import { estimateCookTime, formatIngredientLine, splitInstructions } from '../recipes';
 
 describe('splitInstructions', () => {
   it('splits on lines and drops empty ones', () => {
@@ -61,5 +61,21 @@ describe('estimateCookTime', () => {
 
   it('is rounded to 5 minutes', () => {
     expect(estimateCookTime('Cook for 13 minutes.', 3) % 5).toBe(0);
+  });
+});
+
+describe('formatIngredientLine', () => {
+  it('puts the ingredient first and the purpose next to it', () => {
+    expect(formatIngredientLine('Vegetable Oil', 'For frying')).toEqual({ name: 'Vegetable Oil', detail: 'For frying' });
+  });
+
+  it('capitalizes the first letter and tidies spaces, keeping the rest as written', () => {
+    expect(formatIngredientLine('  vegetable   oil ', 'to taste')).toEqual({ name: 'Vegetable oil', detail: 'To taste' });
+    expect(formatIngredientLine('Raw tiger prawns', '150g')).toEqual({ name: 'Raw tiger prawns', detail: '150g' });
+    expect(formatIngredientLine('Dijon Mustard', '3  tablespoons')).toEqual({ name: 'Dijon Mustard', detail: '3 tablespoons' });
+  });
+
+  it('allows an empty measure', () => {
+    expect(formatIngredientLine('Salt', '  ')).toEqual({ name: 'Salt', detail: '' });
   });
 });

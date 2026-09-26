@@ -139,13 +139,13 @@ isOneToOne: false
                   ]
                 },"recipe_ingredients": {
                   Row: {
-                    "id": number,"ingredient_id": number,"position": number,"raw_text": string,"recipe_id": number
+                    "id": number,"ingredient_id": number,"measure": string | null,"name": string | null,"position": number,"raw_text": string,"recipe_id": number
                   }
                   Insert: {
-                    "id"?: number,"ingredient_id": number,"position"?: number,"raw_text": string,"recipe_id": number
+                    "id"?: number,"ingredient_id": number,"measure"?: string | null,"name"?: string | null,"position"?: number,"raw_text": string,"recipe_id": number
                   }
                   Update: {
-                    "id"?: number,"ingredient_id"?: number,"position"?: number,"raw_text"?: string,"recipe_id"?: number
+                    "id"?: number,"ingredient_id"?: number,"measure"?: string | null,"name"?: string | null,"position"?: number,"raw_text"?: string,"recipe_id"?: number
                   }
                   Relationships: [
                     {

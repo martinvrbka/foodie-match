@@ -59,15 +59,21 @@ async function fetchAllMeals(): Promise<Meal[]> {
 /** Extra ingredient lines for recipes whose TheMealDB list is incomplete, by idMeal. */
 type RecipeFixes = Record<string, string[]>;
 
-function ingredientLines(meal: Meal, fixes: RecipeFixes): { raw: string; line: string }[] {
-  const out: { raw: string; line: string }[] = [];
+interface Line {
+  raw: string;
+  measure: string;
+  line: string;
+}
+
+function ingredientLines(meal: Meal, fixes: RecipeFixes): Line[] {
+  const out: Line[] = [];
   for (let i = 1; i <= 20; i++) {
     const raw = (meal[`strIngredient${i}`] ?? '').trim();
     if (!raw) continue;
     const measure = (meal[`strMeasure${i}`] ?? '').trim();
-    out.push({ raw, line: `${measure} ${raw}`.trim() });
+    out.push({ raw, measure, line: `${measure} ${raw}`.trim() });
   }
-  for (const raw of fixes[meal.idMeal] ?? []) out.push({ raw, line: raw });
+  for (const raw of fixes[meal.idMeal] ?? []) out.push({ raw, measure: '', line: raw });
   return out;
 }
 
@@ -163,6 +169,8 @@ async function main() {
         recipe_id: recipeIds.get(meal.idMeal)!,
         ingredient_id: ids.get(l.name)!,
         raw_text: l.line,
+        name: l.raw,
+        measure: l.measure,
         position,
       })),
     );

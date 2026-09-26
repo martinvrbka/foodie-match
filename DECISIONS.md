@@ -60,7 +60,10 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — DB integration tests use Jest + supabase-js against local Supabase in Docker** (`npm run test:db`), signing up real test users. Separate from `npm test` so commits don't need Docker. They run with plain babel, not the `jest-expo` preset, whose React Native polyfills break `fetch` in Node.
 - **2026-09-26 — Local Supabase: storage, edge functions and analytics disabled; sign-up rate limit raised** (tests create many users). Cloud settings are unaffected.
 - **2026-09-26 — Seed script runs on plain Node 24 type stripping** (no tsx/ts-node); `tsconfig` allows `.ts` import extensions so it type-checks with the app.
-- **2026-09-26 — A temporary recipe list screen** gives access to recipe details until Discover exists.
+- **2026-09-26 — A temporary recipe list screen** gives access to recipe details until Discover exists. It is deliberately unfiltered; browse filters come after swiping works.
+- **2026-09-26 — Recipe detail marks what I don't eat**: a notice at the top and "You don't eat: Seafood" on each affected line (explicit or via a parent). The partner's exclusions aren't shown there yet.
+- **2026-09-26 — Ingredient lines show name first, then amount/purpose** ("Vegetable Oil · For frying"); `recipe_ingredients.name`/`measure` store the source parts, `raw_text` the full line.
+- **2026-09-26 — No guessing of recipe parts** ("for the filling"). TheMealDB drops section headings; splitting on repeated ingredients misplaced lines in many of the 215 recipes with repeats (e.g. red + green pepper), so repeats are shown as listed.
 - **2026-09-26 — `db:types` passes the local DB URL explicitly**: after `supabase link` the CLI reads `SUPABASE_DB_PASSWORD` from `.env` and would try the cloud password on the local DB.
 - **2026-09-26 — Cloud schema is deployed with `npm run db:push`** (Supabase CLI + access token + DB password in `.env`), not by pasting SQL.
 - **2026-09-26 — Private GitHub repo `martinvrbka/foodie-match`**; push after every phase.

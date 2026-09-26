@@ -19,9 +19,15 @@ describe('signed in', () => {
     const garlic = await ingredient('garlic');
     const r = await recipe([garlic]);
     const { data } = await ok(
-      a.client.from('recipes').select('id, recipe_ingredients (raw_text, position)').eq('id', r).single(),
+      a.client
+        .from('recipes')
+        .select('id, recipe_ingredients (raw_text, name, measure, position, ingredient_id)')
+        .eq('id', r)
+        .single(),
     );
-    expect(data!.recipe_ingredients).toEqual([{ raw_text: 'line 0', position: 0 }]);
+    expect(data!.recipe_ingredients).toEqual([
+      { raw_text: 'line 0', name: null, measure: null, position: 0, ingredient_id: garlic },
+    ]);
   });
 
   it('sees only own profile until paired', async () => {

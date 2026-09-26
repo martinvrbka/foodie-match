@@ -1,9 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { type Ingredient, type PresetKey, togglePreset } from '../logic/exclusions';
+import { type ExclusionState, exclusionStates, type Ingredient, type PresetKey, togglePreset } from '../logic/exclusions';
 import type { Category } from '../logic/ingredients';
 import { supabase } from './supabase';
 
 const PAGE = 1000;
+
+let ingredientsCache: Promise<Ingredient[]> | null = null;
+
+/** Ingredients change only when the seed runs, so load them once per app session. */
+export function cachedIngredients(): Promise<Ingredient[]> {
+  ingredientsCache ??= listIngredients().catch((e) => {
+    ingredientsCache = null;
+    throw e;
+  });
+  return ingredientsCache;
+}
 
 export async function listIngredients(): Promise<Ingredient[]> {
   const out: Ingredient[] = [];
@@ -72,7 +83,7 @@ export function useExclusions(userId: string): Exclusions {
 
   const reload = useCallback(() => {
     setLoadError(null);
-    Promise.all([listIngredients(), listMyExclusions(userId)]).then(([ings, mine]) => {
+    Promise.all([cachedIngredients(), listMyExclusions(userId)]).then(([ings, mine]) => {
       setIngredients(ings);
       setExplicit(mine);
     }, setLoadError);
@@ -107,4 +118,29 @@ export function useExclusions(userId: string): Exclusions {
       change(add, remove);
     },
   };
+}
+
+export interface MyExclusionStates {
+  /** State of every ingredient for me; null while loading. */
+  states: Map<number, ExclusionState> | null;
+  /** Ingredient names by id, for "Excluded: Seafood" labels. */
+  names: Map<number, string>;
+  error: unknown;
+}
+
+/** Read-only view of my exclusions (explicit + implied), loaded when the screen mounts. */
+export function useMyExclusionStates(userId: string): MyExclusionStates {
+  const [value, setValue] = useState<MyExclusionStates>({ states: null, names: new Map(), error: null });
+  useEffect(() => {
+    let live = true;
+    Promise.all([cachedIngredients(), listMyExclusions(userId)]).then(
+      ([ings, mine]) =>
+        live && setValue({ states: exclusionStates(ings, mine), names: new Map(ings.map((i) => [i.id, i.name])), error: null }),
+      (error) => live && setValue((v) => ({ ...v, error })),
+    );
+    return () => {
+      live = false;
+    };
+  }, [userId]);
+  return value;
 }

@@ -47,6 +47,7 @@ export const textPairs: { fg: string; bg: string; large?: boolean; name: string 
   { name: 'large label/icon on primary', fg: colors.onPrimary, bg: colors.primary, large: true },
   { name: 'primary icon on surface', fg: colors.primary, bg: colors.surface, large: true },
   { name: 'primaryStrong text on background', fg: colors.primaryStrong, bg: colors.background },
+  { name: 'primaryStrong text on surface', fg: colors.primaryStrong, bg: colors.surface },
   { name: 'text on secondary', fg: colors.onSecondary, bg: colors.secondary },
   { name: 'text on accent', fg: colors.onAccent, bg: colors.accent },
   { name: 'text on success', fg: colors.onSuccess, bg: colors.success },
