@@ -1,17 +1,21 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
+import { InviteCard } from '../components/InviteCard';
 import { signOut, useAuth } from '../data/auth';
 import { errorText } from '../data/errors';
-import { useMyProfile } from '../data/profile';
+import { useInvites } from '../data/pairing';
+import { useProfile } from '../data/profile';
 import { t } from '../i18n';
-import { colors, font, spacing } from '../theme/tokens';
+import { colors, font, radius, spacing } from '../theme/tokens';
 
 export default function Home() {
   const { session } = useAuth();
-  const { me, partner, loading, error, reload } = useMyProfile(session!.user.id);
+  const userId = session!.user.id;
+  const { me, partner, loading, error, reload } = useProfile();
+  const invites = useInvites(userId);
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
   // First run: ask what they don't eat before anything else.
@@ -29,7 +33,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         {error ? (
           <>
             <Text style={styles.body}>{errorText(error)}</Text>
@@ -39,11 +43,23 @@ export default function Home() {
           <>
             <Text style={styles.title}>{t('home.greeting', { name: me?.display_name ?? '' })}</Text>
             <Text style={styles.muted}>{t('home.signedInAs', { email: me?.email ?? '' })}</Text>
-            <Text style={styles.body}>
-              {partner ? t('home.pairedWith', { name: partner.display_name }) : t('home.pairingSoon')}
-            </Text>
           </>
         )}
+
+        {partner ? (
+          <View style={styles.paired}>
+            <Text style={styles.pairedText}>{t('home.pairedWith', { name: partner.display_name })}</Text>
+            <Button label={t('pair.manage')} variant="text" onPress={() => router.push('/pair')} />
+          </View>
+        ) : (
+          <>
+            {invites.incoming.map((inv) => (
+              <InviteCard key={inv.invite_id} invite={inv} onAnswered={invites.reload} />
+            ))}
+            <Button label={t('pair.cta')} onPress={() => router.push('/pair')} />
+          </>
+        )}
+
         <Button label={t('discover.title')} onPress={() => router.push('/discover')} />
         <Button label={t('exclusions.title')} variant="text" onPress={() => router.push('/exclusions')} />
         <Button label={t('recipes.browse')} variant="text" onPress={() => router.push('/recipes')} />
@@ -53,7 +69,7 @@ export default function Home() {
           variant="text"
           onPress={() => signOut().catch((e) => setSignOutError(errorText(e)))}
         />
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -61,8 +77,17 @@ export default function Home() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
-  content: { flex: 1, justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
+  content: { flexGrow: 1, justifyContent: 'center', padding: spacing.lg, gap: spacing.md },
   title: { fontSize: font.hero, fontWeight: '800', color: colors.text },
   muted: { fontSize: font.small, color: colors.textMuted },
   body: { fontSize: font.body, color: colors.text },
+  paired: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.success,
+    alignItems: 'flex-start',
+  },
+  pairedText: { fontSize: font.body, fontWeight: '700', color: colors.text },
 });

@@ -7,7 +7,8 @@ import { Button } from '../../components/Button';
 import { RecipeMeta } from '../../components/RecipeMeta';
 import { useAuth } from '../../data/auth';
 import { errorText } from '../../data/errors';
-import { useMyExclusionStates } from '../../data/exclusions';
+import { useExclusionStates } from '../../data/exclusions';
+import { useProfile } from '../../data/profile';
 import { getRecipe, photoUrl, type RecipeDetail } from '../../data/recipes';
 import { t } from '../../i18n';
 import { displayName } from '../../logic/exclusions';
@@ -17,7 +18,8 @@ export default function Recipe() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { session } = useAuth();
-  const mine = useMyExclusionStates(session!.user.id);
+  const { partner } = useProfile();
+  const ex = useExclusionStates(session!.user.id, partner?.id ?? null);
   const [recipe, setRecipe] = useState<RecipeDetail | null | undefined>(undefined);
   const [error, setError] = useState<unknown>(null);
 
@@ -55,13 +57,16 @@ export default function Recipe() {
     );
   }
 
-  /** "Seafood" for a line I can't eat (the exclusion that covers it), else null. */
-  const excludedBy = (ingredientId: number): string | null => {
-    const s = mine.states?.get(ingredientId);
+  /** "Seafood" for a line that person can't eat (the exclusion that covers it), else null. */
+  const coveredBy = (states: typeof ex.mine, ingredientId: number): string | null => {
+    const s = states?.get(ingredientId);
     if (!s || s.state === 'none') return null;
-    return displayName(mine.names.get(s.state === 'implied' ? s.via : ingredientId) ?? '');
+    return displayName(ex.names.get(s.state === 'implied' ? s.via : ingredientId) ?? '');
   };
+  const excludedBy = (id: number) => coveredBy(ex.mine, id);
+  const partnerExcludedBy = (id: number) => coveredBy(ex.partner, id);
   const blocked = recipe.ingredients.some((l) => excludedBy(l.ingredientId) !== null);
+  const partnerBlocked = recipe.ingredients.some((l) => partnerExcludedBy(l.ingredientId) !== null);
 
   return (
     <View style={styles.screen}>
@@ -82,17 +87,28 @@ export default function Recipe() {
               <Text style={styles.warningText}>{t('recipes.containsExcluded')}</Text>
             </View>
           ) : null}
+          {partner && partnerBlocked ? (
+            <View style={styles.partnerBadge}>
+              <Text style={styles.partnerBadgeText}>{t('discover.partnerWontEat', { name: partner.display_name })}</Text>
+            </View>
+          ) : null}
 
           <Text style={styles.heading}>{t('recipes.ingredients')}</Text>
           <View style={styles.card}>
             {recipe.ingredients.map((line, i) => {
               const by = excludedBy(line.ingredientId);
+              const partnerBy = partnerExcludedBy(line.ingredientId);
               return (
                 <View key={i} style={[styles.line, i > 0 && styles.lineBorder]}>
                   <View style={styles.lineMain}>
                     <Text style={[styles.lineName, by !== null && styles.lineNameExcluded]}>{line.name}</Text>
                     {by !== null ? (
                       <Text style={styles.excludedNote}>{t('recipes.excludedBecause', { name: by })}</Text>
+                    ) : null}
+                    {partner && partnerBy !== null ? (
+                      <Text style={styles.partnerNote}>
+                        {t('recipes.partnerExcludedBecause', { partner: partner.display_name, name: partnerBy })}
+                      </Text>
                     ) : null}
                   </View>
                   {line.detail ? <Text style={styles.lineDetail}>{line.detail}</Text> : null}
@@ -155,6 +171,16 @@ const styles = StyleSheet.create({
     borderColor: colors.primaryStrong,
     backgroundColor: colors.surface,
   },
+  partnerBadge: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accent,
+  },
+  partnerBadgeText: { fontSize: font.small, fontWeight: '700', color: colors.onAccent },
+  partnerNote: { fontSize: font.small, fontWeight: '600', color: colors.textMuted },
   warningText: { fontSize: font.body, fontWeight: '700', color: colors.primaryStrong },
   body: { fontSize: font.body, color: colors.text, lineHeight: 24 },
   step: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },

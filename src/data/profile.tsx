@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import type { Tables } from './database.types';
 import { supabase } from './supabase';
 
@@ -12,8 +12,19 @@ export interface MyProfile {
   reload: () => void;
 }
 
-/** My profile and my partner's (if paired). Updates live when either changes. */
-export function useMyProfile(userId: string): MyProfile {
+const ProfileContext = createContext<MyProfile>({
+  me: null,
+  partner: null,
+  loading: true,
+  error: null,
+  reload: () => {},
+});
+
+/**
+ * My profile and my partner's (if paired), shared by all signed-in screens.
+ * Updates live, e.g. on both phones the moment they pair or unpair.
+ */
+export function ProfileProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [state, setState] = useState<Omit<MyProfile, 'reload'>>({
     me: null,
     partner: null,
@@ -39,7 +50,7 @@ export function useMyProfile(userId: string): MyProfile {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel(`profile-${userId}`)
+      .channel(`profiles-${userId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => load())
       .subscribe();
     return () => {
@@ -47,8 +58,10 @@ export function useMyProfile(userId: string): MyProfile {
     };
   }, [userId, load]);
 
-  return { ...state, reload: load };
+  return <ProfileContext.Provider value={{ ...state, reload: load }}>{children}</ProfileContext.Provider>;
 }
+
+export const useProfile = () => useContext(ProfileContext);
 
 /** Marks the first-run "What don't you eat?" step as done. */
 export async function setOnboarded(userId: string) {

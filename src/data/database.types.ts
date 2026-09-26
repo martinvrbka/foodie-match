@@ -57,13 +57,13 @@ isOneToOne: false
                   ]
                 },"matches": {
                   Row: {
-                    "couple_id": string,"created_at": string,"recipe_id": number,"removed_at": string | null
+                    "couple_id": string,"created_at": string,"recipe_id": number,"removed_at": string | null,"via": string
                   }
                   Insert: {
-                    "couple_id": string,"created_at"?: string,"recipe_id": number,"removed_at"?: string | null
+                    "couple_id": string,"created_at"?: string,"recipe_id": number,"removed_at"?: string | null,"via"?: string
                   }
                   Update: {
-                    "couple_id"?: string,"created_at"?: string,"recipe_id"?: number,"removed_at"?: string | null
+                    "couple_id"?: string,"created_at"?: string,"recipe_id"?: number,"removed_at"?: string | null,"via"?: string
                   }
                   Relationships: [
                     {

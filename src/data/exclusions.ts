@@ -41,8 +41,8 @@ export async function listIngredients(): Promise<Ingredient[]> {
   }
 }
 
+/** Explicit exclusions of me or my partner (RLS allows both). */
 async function listMyExclusions(userId: string): Promise<Set<number>> {
-  // RLS also returns the partner's rows, so filter to mine.
   const { data, error } = await supabase
     .from('user_excluded_ingredients')
     .select('ingredient_id')
@@ -125,27 +125,39 @@ export function useExclusions(userId: string): Exclusions {
   };
 }
 
-export interface MyExclusionStates {
+export interface ExclusionStatesView {
   /** State of every ingredient for me; null while loading. */
-  states: Map<number, ExclusionState> | null;
+  mine: Map<number, ExclusionState> | null;
+  /** Same for my partner; null when unpaired or loading. */
+  partner: Map<number, ExclusionState> | null;
   /** Ingredient names by id, for "Excluded: Seafood" labels. */
   names: Map<number, string>;
   error: unknown;
 }
 
-/** Read-only view of my exclusions (explicit + implied), loaded when the screen mounts. */
-export function useMyExclusionStates(userId: string): MyExclusionStates {
-  const [value, setValue] = useState<MyExclusionStates>({ states: null, names: new Map(), error: null });
+/** Read-only view of my (and my partner's) exclusions, loaded when the screen mounts. */
+export function useExclusionStates(userId: string, partnerId: string | null): ExclusionStatesView {
+  const [value, setValue] = useState<ExclusionStatesView>({ mine: null, partner: null, names: new Map(), error: null });
   useEffect(() => {
     let live = true;
-    Promise.all([cachedIngredients(), listMyExclusions(userId)]).then(
-      ([ings, mine]) =>
-        live && setValue({ states: exclusionStates(ings, mine), names: new Map(ings.map((i) => [i.id, i.name])), error: null }),
+    Promise.all([
+      cachedIngredients(),
+      listMyExclusions(userId),
+      partnerId ? listMyExclusions(partnerId) : Promise.resolve(null),
+    ]).then(
+      ([ings, mine, theirs]) =>
+        live &&
+        setValue({
+          mine: exclusionStates(ings, mine),
+          partner: theirs ? exclusionStates(ings, theirs) : null,
+          names: new Map(ings.map((i) => [i.id, i.name])),
+          error: null,
+        }),
       (error) => live && setValue((v) => ({ ...v, error })),
     );
     return () => {
       live = false;
     };
-  }, [userId]);
+  }, [userId, partnerId]);
   return value;
 }

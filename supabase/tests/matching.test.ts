@@ -59,6 +59,28 @@ describe('live matching', () => {
   });
 });
 
+describe('how a match was made', () => {
+  it("live swipe ⇒ via 'swipe'; after pairing or removing an exclusion ⇒ via 'retroactive'", async () => {
+    const [a, b] = await couple();
+    const live = await recipe([]);
+    await like(a, live);
+    await like(b, live);
+
+    const garlic = await ingredient('garlic');
+    const later = await recipe([garlic]);
+    await ok(a.client.from('user_excluded_ingredients').insert({ ingredient_id: garlic }));
+    await like(a, later);
+    await like(b, later);
+    await ok(a.client.from('user_excluded_ingredients').delete().eq('ingredient_id', garlic));
+
+    const { data } = await ok(a.client.from('matches').select('recipe_id, via').order('recipe_id'));
+    expect(data).toEqual([
+      { recipe_id: live, via: 'swipe' },
+      { recipe_id: later, via: 'retroactive' },
+    ]);
+  });
+});
+
 describe('exclusion changes', () => {
   it('removing an exclusion creates the match retroactively', async () => {
     const [a, b] = await couple();

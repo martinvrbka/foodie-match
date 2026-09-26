@@ -29,6 +29,8 @@ Short, dated. Read before changing business rules. Replace entries that become o
 
 ## Pairing
 - **2026-09-26 — Pairing codes: 6 chars, no 0/O/1/I/L.** Readable when typed by hand.
+- **2026-09-26 — QR payload is `foodiematch:pair:<CODE>`**, so unrelated QR codes are rejected; the scanner and manual entry share `parsePairingCode` (any case, spaces/dashes allowed).
+- **2026-09-26 — Pairing UI lives on one screen** (my QR + countdown, scan, type code, email invite); incoming invites also show on Home. Both phones switch to "paired" through the realtime profile update, with no polling.
 - **2026-09-26 — Pairing actions are SECURITY DEFINER RPCs.** Under RLS, B can't read A's code/invite rows directly.
 - **2026-09-26 — Pairing by either method declines all pending invites to/from both partners** and deletes their unused codes. A user can only be in one couple (also enforced by a trigger: max 2 members).
 - **2026-09-26 — Inviter can't cancel an invite** (MVP); a wrong-email invite just stays pending until either side pairs.
@@ -44,7 +46,7 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Matches are hidden, not deleted.** A `matches` row = both liked + compatible when created; view `visible_matches` applies both partners' current exclusions at read time. User-removed matches get `removed_at` and are never re-created.
 - **2026-09-26 — Discover saves each swipe right away; if saving fails the card comes back on top** with an error. Undo waits for the pending save, then calls the undo RPC.
 - **2026-09-26 — The deck is rebuilt only when exclusions changed** since it was built (not on every return from a recipe), so the top card stays put.
-- **2026-09-26 — "It's a match!" shows on the swiping phone from the RPC result.** The partner's phone learns about it via realtime in the Matches phase.
+- **2026-09-26 — "It's a match!" on both phones**: the swiping phone from the RPC result, the partner's via realtime INSERT on `matches`. `matches.via` (`swipe` | `retroactive`) keeps retroactive matches from triggering the full-screen celebration. Each recipe is celebrated once per app session, over any screen (global overlay).
 - **2026-09-26 — Recipe list filters: All / Liked / Nope / Matches** (my discover swipes, our visible matches). Exclusions never hide recipes there.
 - **2026-09-26 — Retroactive matches show a small "N new matches" banner**; the full "It's a match!" animation is for live swipes only.
 - **2026-09-26 — Match rule implemented twice:** pure TS `isMatch()` is the tested spec; a mirrored SQL function runs in triggers (needed for realtime on both phones). Change both together.
@@ -63,11 +65,13 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Node 24 LTS via nvm, pinned in `.nvmrc`.** Node 20 is EOL and lacks the WebSocket global supabase-js needs outside the app.
 - **2026-09-26 — DB integration tests use Jest + supabase-js against local Supabase in Docker** (`npm run test:db`), signing up real test users. Separate from `npm test` so commits don't need Docker. They run with plain babel, not the `jest-expo` preset, whose React Native polyfills break `fetch` in Node.
 - **2026-09-26 — Local Supabase: storage, edge functions and analytics disabled; sign-up rate limit raised** (tests create many users). Cloud settings are unaffected.
+- **2026-09-26 — Realtime integration tests wait for the "Subscribed to PostgreSQL" state**: events in the first moments after `SUBSCRIBED` can be missed, which doesn't matter in the app (subscriptions start long before a match).
+- **2026-09-26 — Profile state is one app-wide provider** (one realtime channel); other hooks that subscribe use unique channel names.
 - **2026-09-26 — Screen tests live in `src/__tests__/`** (every file under `src/app/` becomes a route). They use React Native Testing Library 14 (async `render`) with the data layer and the animated card mocked.
 - **2026-09-26 — `expo-asset` is a direct dependency**: `expo-sqlite` imports it, and only Metro found the copy nested inside `expo`.
 - **2026-09-26 — Seed script runs on plain Node 24 type stripping** (no tsx/ts-node); `tsconfig` allows `.ts` import extensions so it type-checks with the app.
 - **2026-09-26 — A temporary recipe list screen** gives access to recipe details until Discover exists. It is deliberately unfiltered; browse filters come after swiping works.
-- **2026-09-26 — Recipe detail marks what I don't eat**: a notice at the top and "You don't eat: Seafood" on each affected line (explicit or via a parent). The partner's exclusions aren't shown there yet.
+- **2026-09-26 — Recipe detail marks what I and my partner don't eat**: a notice / "{partner} won't eat this" badge at the top and a note on each affected line. Also the practical way to check the partner badge, since partner-excluded cards sit at the end of an ~800-card deck.
 - **2026-09-26 — Ingredient lines show name first, then amount/purpose** ("Vegetable Oil · For frying"); `recipe_ingredients.name`/`measure` store the source parts, `raw_text` the full line.
 - **2026-09-26 — No guessing of recipe parts** ("for the filling"). TheMealDB drops section headings; splitting on repeated ingredients misplaced lines in many of the 215 recipes with repeats (e.g. red + green pepper), so repeats are shown as listed.
 - **2026-09-26 — `db:types` passes the local DB URL explicitly**: after `supabase link` the CLI reads `SUPABASE_DB_PASSWORD` from `.env` and would try the cloud password on the local DB.

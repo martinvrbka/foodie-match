@@ -4,12 +4,15 @@ import { render, screen, userEvent, waitFor } from '@testing-library/react-nativ
 import Discover from '../app/discover';
 import { loadDiscover, swipe, undoLastSwipe, type DiscoverData } from '../data/discover';
 
+const mockCelebrate = jest.fn();
+
 jest.mock('../data/discover', () => ({
   loadDiscover: jest.fn(),
   swipe: jest.fn(),
   undoLastSwipe: jest.fn(),
 }));
 jest.mock('../data/supabase', () => ({ supabase: {} }));
+jest.mock('../data/matches', () => ({ useMatchCelebration: () => ({ celebrate: mockCelebrate }) }));
 jest.mock('../data/auth', () => ({ useAuth: () => ({ session: { user: { id: 'me' } } }) }));
 jest.mock('../data/exclusions', () => ({ exclusionsVersion: () => 0 }));
 jest.mock('expo-haptics', () => ({
@@ -100,14 +103,19 @@ it('Nope saves a dislike', async () => {
   expect(swipe).toHaveBeenCalledWith(expect.any(Number), false);
 });
 
-it('shows "It\'s a match!" when the like completes a match', async () => {
+// The overlay itself is shared (MatchOverlay, tested separately); Discover must trigger it.
+it('celebrates when the like completes a match, and only then', async () => {
   jest.mocked(loadDiscover).mockResolvedValue(data({ excluded: new Set(), liked: new Set([1, 2]) }));
-  jest.mocked(swipe).mockResolvedValue({ matched: true });
+  jest.mocked(swipe).mockResolvedValueOnce({ matched: true }).mockResolvedValueOnce({ matched: false });
   await render(<Discover />);
   await screen.findByText(/^top: /);
-  await userEvent.setup().press(screen.getByRole('button', { name: 'Like' }));
-  expect(await screen.findByText("It's a match!")).toBeTruthy();
-  expect(screen.getByText('Anna likes it too.')).toBeTruthy();
+  const user = userEvent.setup();
+  await user.press(screen.getByRole('button', { name: 'Like' }));
+  const firstId = jest.mocked(swipe).mock.calls[0][0];
+  await waitFor(() => expect(mockCelebrate).toHaveBeenCalledWith(firstId));
+  await user.press(screen.getByRole('button', { name: 'Like' }));
+  await waitFor(() => expect(swipe).toHaveBeenCalledTimes(2));
+  expect(mockCelebrate).toHaveBeenCalledTimes(1);
 });
 
 it('puts the card back when saving fails', async () => {

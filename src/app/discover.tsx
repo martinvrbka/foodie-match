@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,7 +9,8 @@ import { useAuth } from '../data/auth';
 import { type DiscoverData, loadDiscover, swipe, undoLastSwipe } from '../data/discover';
 import { errorText } from '../data/errors';
 import { exclusionsVersion } from '../data/exclusions';
-import { photoUrl, type RecipeSummary } from '../data/recipes';
+import { useMatchCelebration } from '../data/matches';
+import { useProfile } from '../data/profile';
 import { t } from '../i18n';
 import { buildDeck, type DeckCard } from '../logic/deck';
 import { colors, font, radius, spacing } from '../theme/tokens';
@@ -30,26 +30,29 @@ export default function Discover() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [last, setLast] = useState<LastSwipe | null>(null);
   const [undoing, setUndoing] = useState(false);
-  const [match, setMatch] = useState<RecipeSummary | null>(null);
+  const { celebrate } = useMatchCelebration();
+  const { me } = useProfile();
   const top = useRef<SwipeCardHandle>(null);
-  const builtFor = useRef<number | null>(null);
+  const builtFor = useRef<string | null>(null);
+  // Rebuild when exclusions or the couple changed since the deck was built.
+  const buildKey = `${exclusionsVersion()}|${me?.couple_id ?? ''}`;
 
   const load = useCallback(() => {
     setLoadError(null);
-    const v = exclusionsVersion();
+    const key = buildKey;
     loadDiscover(userId).then((d) => {
-      builtFor.current = v;
+      builtFor.current = key;
       setData(d);
       setDeck(buildDeck({ ...d.deckInput, rng: Math.random }));
       setLast(null);
     }, setLoadError);
-  }, [userId]);
+  }, [userId, buildKey]);
 
-  // Build on first open, and rebuild when exclusions changed meanwhile.
+  // Build on first open, and rebuild when exclusions or pairing changed meanwhile.
   useFocusEffect(
     useCallback(() => {
-      if (builtFor.current !== exclusionsVersion()) load();
-    }, [load]),
+      if (builtFor.current !== buildKey) load();
+    }, [load, buildKey]),
   );
 
   const onSwiped = (dir: SwipeDirection) => {
@@ -62,8 +65,7 @@ export default function Discover() {
     const saved = swipe(card.recipeId, liked).then(
       ({ matched }) => {
         if (matched) {
-          setMatch(data.recipes.get(card.recipeId) ?? null);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          celebrate(card.recipeId);
         }
         return true;
       },
@@ -181,26 +183,6 @@ export default function Discover() {
         />
       </View>
 
-      {match ? (
-        <View style={styles.matchOverlay} accessibilityViewIsModal>
-          <Text style={styles.matchTitle}>{t('discover.matchTitle')}</Text>
-          <Image source={photoUrl(match.image_url, 'medium')} style={styles.matchPhoto} contentFit="cover" />
-          <Text style={styles.matchRecipe}>{match.title}</Text>
-          <Text style={styles.matchBody}>
-            {data.partnerName ? t('discover.matchBody', { name: data.partnerName }) : t('discover.matchBodyNoName')}
-          </Text>
-          <Button
-            label={t('discover.viewRecipe')}
-            onPress={() => {
-              setMatch(null);
-              openRecipe(match.id);
-            }}
-          />
-          <Pressable accessibilityRole="button" onPress={() => setMatch(null)} style={styles.keepSwiping}>
-            <Text style={styles.keepSwipingText}>{t('discover.keepSwiping')}</Text>
-          </Pressable>
-        </View>
-      ) : null}
     </SafeAreaView>
   );
 }
@@ -268,22 +250,4 @@ const styles = StyleSheet.create({
   roundLabel: { fontSize: 30, fontWeight: '800', color: colors.text },
   roundLabelPrimary: { color: colors.onPrimary },
   roundLabelSmall: { fontSize: font.title },
-  matchOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  matchTitle: { fontSize: 40, fontWeight: '900', color: colors.onAccent },
-  matchPhoto: { width: 220, height: 220, borderRadius: radius.lg },
-  matchRecipe: { fontSize: font.title, fontWeight: '800', color: colors.onAccent, textAlign: 'center' },
-  matchBody: { fontSize: font.body, color: colors.onAccent },
-  keepSwiping: { minHeight: 48, justifyContent: 'center', paddingHorizontal: spacing.lg },
-  keepSwipingText: { fontSize: font.body, fontWeight: '700', color: colors.onAccent },
 });
