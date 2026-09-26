@@ -22,6 +22,18 @@ const keys: Record<string, StringKey> = {
   invite_not_pending: 'errors.inviteGone',
   not_paired: 'errors.notPaired',
   nothing_to_undo: 'errors.nothingToUndo',
+  plan_not_found: 'errors.planGone',
+  plan_wrong_stage: 'errors.planStage',
+  plan_bad_date: 'errors.planDate',
+  plan_bad_cells: 'errors.planCells',
+  plan_past_day: 'errors.planPastDay',
+  plan_slot_locked: 'errors.planLocked',
+  plan_not_a_match: 'errors.planNotMatch',
+  plan_rejected: 'errors.planRejected',
+  plan_not_in_selection: 'errors.planRejected',
+  plan_no_slots: 'errors.planNoSlots',
+  plan_bad_picks: 'errors.unknown',
+  plan_bad_leftovers: 'errors.unknown',
 };
 
 interface ErrorLike {

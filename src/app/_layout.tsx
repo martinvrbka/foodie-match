@@ -29,6 +29,7 @@ function Routes() {
         <Stack.Screen name="matches" />
         <Stack.Screen name="pair" />
         <Stack.Screen name="tonight" />
+        <Stack.Screen name="week" />
         <Stack.Screen name="scan" />
         <Stack.Screen name="exclusions" />
         <Stack.Screen name="recipes" />

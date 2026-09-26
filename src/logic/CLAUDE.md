@@ -40,3 +40,16 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - `tonightAdvance` returns the next stage only when both participants finished the current one; `choosing` ends by a tap, never automatically.
 - Borda: rank 1 of N = N points … rank N = 1. Tie-break: shorter `cook_time_min`, then injected RNG. Same inputs + same RNG ⇒ same winner.
 - Tonight swipes never affect discover data or matches.
+
+## Week plan (`week.ts`, `plan.ts`)
+- Dates are local `YYYY-MM-DD` strings; weeks run Monday–Sunday. A plan covers `firstDay` (next Monday, or today for "rest of this week") to Sunday.
+- `planPhase`: `gone` when the week ended, or when never generated and its first day came (a rest-of-week plan started today survives today); `active` = generated and started; else `upcoming`. Mirrored in SQL `private.cleanup_week_plans`: change both together.
+- `mealsFor(category)`: breakfast ⇐ `Breakfast`; snack ⇐ `Starter`/`Side`/`Dessert`; lunch and dinner ⇐ anything but `Dessert`. Only Generate uses it; a manual swap allows any match anywhere.
+- `pickSelection`: ≤ 30 random matches; each switched-on meal group gets a quota proportional to its slots (breakfast, snack, then main), rest random.
+- `weekCandidates`: picks that are still visible matches and that neither partner rejected this week (unreached = liked).
+- Leftovers are derived, never stored: a dish planned **exactly twice, 1–2 days apart** is a pair (earlier = cook a double portion, later = leftover). The prep schedule is the list of pairs.
+- `generatePlan`: past days and locked slots never change; dishes already in them aren't reused. Plans up to `leftovers` pairs (minus pairs kept in fixed slots) in lunch/dinner only, preferring dinner → next day's lunch and dishes that can't fill breakfast/snack; never a "not good for leftovers" dish. The rest is a maximum bipartite matching (most constrained slots first); unfilled = `nothing_matched`.
+- `availability`: per group (breakfast / lunch+dinner / snack), dishes allowed there and whether Generate (deterministic RNG) would leave a slot empty ("short").
+- Edits (`swapSlot`, `clearSlot`, `moveSlot`, `setLocked`, `dropLeftoversOf`, `replaceTonight`): past days refused; hand edits of a locked slot refused (unlock first). A dish may appear a second time only 1–2 days **after** the first (it becomes a leftover), never 3 times. Move = exchange with the target; a cook or leftover must keep its role 1–2 days apart (`leftover_timing`).
+- When a cook-day meal changes, its leftover is emptied (`leftover_removed`), or kept with `no_longer_leftover` if locked; never when the cook day has passed.
+- `replaceTonight`: the Tonight winner replaces today's dinner even if locked (unlocks it); the winner's other future slots are emptied (`eaten_tonight`) unless one is a valid leftover of tonight.

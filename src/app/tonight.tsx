@@ -14,9 +14,12 @@ import { type MatchRow, useMatchList } from '../data/matches';
 import { useProfile } from '../data/profile';
 import { photoUrl, type RecipeSummary } from '../data/recipes';
 import { dismissTonight, type TonightFilters, tonightDismissed, useTonight } from '../data/tonight';
+import { activePlan, editContext, useWeek } from '../data/week';
 import { t } from '../i18n';
 import { COOK_TIME_OPTIONS, filterMatches, matchCuisines } from '../logic/matches';
+import { replaceTonight } from '../logic/plan';
 import { ACTIVE_STATUSES, TOP_N } from '../logic/tonight';
+import { localDate } from '../logic/week';
 import { colors, font, radius, spacing } from '../theme/tokens';
 
 const toItem = (m: MatchRow) => ({
@@ -51,6 +54,23 @@ export default function Tonight() {
   const me = tonight.data?.me;
   const active = !!s && ACTIVE_STATUSES.includes(s.status);
   const partnerName = partner?.display_name ?? '';
+
+  // Week plan: tonight's planned dinner is offered first; another winner replaces it.
+  const week = useWeek();
+  const plan = activePlan(week.data);
+  const planSlots = (plan && week.data?.slots.get(plan.id)) || [];
+  const today = week.data?.today ?? null;
+  const plannedDinner = planSlots.find((x) => x.day === today && x.meal === 'dinner')?.recipeId ?? null;
+  const [chooseElse, setChooseElse] = useState(false);
+  const replaced = useRef<string | null>(null);
+  useEffect(() => {
+    if (!s || s.status !== 'done' || !s.winnerRecipeId || !s.completedAt || !plan || !week.data) return;
+    if (replaced.current === s.id || localDate(new Date(s.completedAt)) !== week.data.today) return;
+    if (plannedDinner === null || plannedDinner === s.winnerRecipeId) return;
+    replaced.current = s.id;
+    const after = replaceTonight(planSlots, week.data.today, s.winnerRecipeId, editContext(week.data));
+    week.saveEdit(plan.id, planSlots, after).catch(setError);
+  }, [s, plan, planSlots, plannedDinner, week]);
 
   let body: ReactNode;
   if (!partner) {
@@ -131,6 +151,26 @@ export default function Tonight() {
         />
       );
     }
+  } else if (plannedDinner !== null && !chooseElse) {
+    const r = recipes.get(plannedDinner);
+    body = (
+      <ScrollView contentContainerStyle={[styles.content, styles.winner]}>
+        <Text style={styles.winnerLabel}>{t('week.tonightPlanned')}</Text>
+        {r ? (
+          <>
+            <Image source={photoUrl(r.image_url, 'full')} style={styles.winnerPhoto} contentFit="cover" />
+            <Text style={styles.winnerTitle} accessibilityRole="header">
+              {r.title}
+            </Text>
+          </>
+        ) : null}
+        <Button
+          label={t('week.eatThis')}
+          onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: String(plannedDinner) } })}
+        />
+        <Button label={t('week.chooseElse')} variant="text" onPress={() => setChooseElse(true)} />
+      </ScrollView>
+    );
   } else {
     body = (
       <StartForm

@@ -12,6 +12,8 @@ describe('errorText', () => {
   it('maps codes raised by our RPCs (sent as the message, with SQL state P0001)', () => {
     expect(errorText({ code: 'P0001', message: 'code_expired' })).toBe(en.errors.codeExpired);
     expect(errorText({ code: 'P0001', message: 'partner_already_paired' })).toBe(en.errors.partnerAlreadyPaired);
+    expect(errorText({ code: 'P0001', message: 'plan_past_day' })).toBe(en.errors.planPastDay);
+    expect(errorText({ code: 'P0001', message: 'plan_rejected' })).toBe(en.errors.planRejected);
   });
 
   it('recognizes network failures', () => {

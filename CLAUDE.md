@@ -1,9 +1,9 @@
 # Foodie Match
 
-Tinder-style recipe picker for a couple (2 users). Each partner sets ingredients they don't eat, the phones pair via QR or in-app email invite, both swipe recipes, and mutual likes become Matches. "Tonight" mode runs a quick swipe + Borda ranking round on the matches to pick one dish.
+Tinder-style recipe picker for a couple (2 users). Each partner sets ingredients they don't eat, the phones pair via QR or in-app email invite, both swipe recipes, and mutual likes become Matches. "Tonight" mode runs a quick swipe + Borda ranking round on the matches to pick one dish. The weekly plan fills a Mon–Sun calendar from re-swiped matches, with planned leftovers and a prep schedule.
 
 - **Read `SPEC.md`** for product requirements (source of truth).
-- **Read `DECISIONS.md` before changing any business rule** (filtering, matching, pairing, Tonight).
+- **Read `DECISIONS.md` before changing any business rule** (filtering, matching, pairing, Tonight, week plan).
 - `ARCHITECTURE.md`: current design and recommended direction. `ROADMAP.md`: what's done, next phase, backlog. Start a session there.
 - General Expo guidance (verify APIs against SDK 57 docs, use `npx expo install`): @AGENTS.md
 
@@ -35,11 +35,11 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 
 ## Folder map
 - `src/app/` — Expo Router screens only; thin, no business logic.
-- `src/logic/` — pure business logic (normalize, deck, match, Borda, Tonight outcome) + tests. See its CLAUDE.md.
+- `src/logic/` — pure business logic (normalize, deck, match, Borda, Tonight outcome, week plan: dates, selection, Generate, edits, leftovers) + tests. See its CLAUDE.md.
 - `src/theme/` — color/spacing tokens and WCAG contrast checker.
 - `src/i18n/` — all UI strings (`en.ts`) and `t()`.
 - `src/data/` — Supabase client, auth, queries, realtime hooks, error → string mapping, generated DB types.
-- `src/components/` — reusable UI (buttons, fields, chips, swipe card).
+- `src/components/` — reusable UI (buttons, fields, chips, swipe card); `week/` holds the week plan's setup grid, re-swipe, availability and calendar.
 - `src/__tests__/` — screen tests for critical flows (not under `src/app/`, which would make them routes).
 - `supabase/migrations/` — schema, RLS, triggers, RPCs as SQL. `supabase/tests/` — DB integration tests (`npm run test:db`).
 - `scripts/` — `seed/themealdb.ts` (recipe import, plain Node 24 with type stripping; imports `src/logic/*.ts` with `.ts` extensions) and `db-push.sh`.
@@ -60,7 +60,7 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 ## Testing rules
 - Every change to business logic (filtering, matching, ranking, ingredient normalization) must include unit tests. Keep this logic in pure functions so it's testable without UI or DB.
 - DB-side logic (RLS policies, match trigger/RPC) must have integration tests against local Supabase (`supabase/tests/`, run with `npm run test:db`; not part of the pre-commit hook).
-- UI: only a few tests for critical flows (swipe saves like, pairing, Tonight winner). No snapshot tests.
+- UI: only a few tests for critical flows (swipe saves like, pairing, Tonight winner, week plan Generate/edits). No snapshot tests.
 - Bug fixes: first write a failing test that reproduces the bug, then fix it.
 - Never modify or delete an existing test to make it pass without explicitly telling me why.
 - `npm test` must pass before every commit (enforced by `.githooks/pre-commit`).

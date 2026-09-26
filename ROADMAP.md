@@ -14,6 +14,7 @@ Last updated 2026-09-26. Keep this short: move finished items to "Done" and dele
 | 5 | Pairing by QR, code and email invite; "It's a match!" live on both phones | `1329441` |
 | 6 | Matches screen: grid, cook-time/cuisine filters, remove, "N new!" | `ca12347` |
 | 7 | Tonight mode: swipe round, top 5, ranking, Borda winner, cooked history | `03fa8f5` |
+| 7b | Weekly meal plan (PRD run 1: US-01, 02, 04–08): re-swipe, Generate with leftovers, prep schedule, edits, accept, Tonight uses the plan | "Week plan" commit |
 
 Tested on two real phones: sign-up, exclusions, pairing (QR and email), Discover, live matches on both phones.
 
@@ -27,6 +28,19 @@ Tested on two real phones: sign-up, exclusions, pairing (QR and email), Discover
 5. **No agreement:** A likes one, B likes another. Both see "You didn't agree on one"; the first tap on either phone decides. **Reshuffle** starts a new round.
 6. **Stop this round** on one phone cancels it on both.
 7. The start screen lists previous winners under **Cooked before**.
+
+**Week plan** (Phase 7b), about 10 minutes. You need at least 4 matches (the Tonight steps above give you some).
+1. A: Home → **Plan our week** → **Plan the rest of this week** (fewer days = quicker). B's Home shows a yellow **"Plan for … in progress" → Join**; B sees "A already started planning".
+2. A: tap the **Lunch** column title to switch lunch off, set **Leftover meals per week** to 1, then **Choose this week's dishes**. Both phones get the same cards.
+3. B: swipe one dish left (remember it), then try **Undo** and swipe it left again. A: like everything.
+4. A: when the cards run out, you see how many dishes you have per meal type. Tap **Generate** while B is still swiping: B's phone switches to the plan with **"A made the plan — review it now"**. The dish B passed on is not in the plan.
+5. With few matches some dinners say **"Nothing matched — pick a dish or leave empty"**. That's expected.
+6. A: tap a dinner → **Swap** → pick the dish of a dinner 3+ days away: **"… is already planned this week"**. Pick it for the very next day's dinner instead: the **Prep schedule** shows **"Cook a double portion on …"**.
+7. A: tap the first of those two dinners → **Clear**: the next day shows **"Leftover removed…"**, and B sees **"Changed by A"** on it (reopen the plan if needed).
+8. **Lock** a dinner, tap **Regenerate**: the locked dinner stays.
+9. B: **Use this plan**. A sees **"Accepted by B"**.
+10. If tonight has a planned dinner: **What do we eat tonight?** first shows it with **Eat this** / **Choose something else**.
+11. **Delete this plan** (bottom of the plan) resets everything, so you can try **Plan next week** too.
 
 ## Next: Phase 8, installable APK
 
@@ -42,6 +56,11 @@ Goal: a sideloadable APK built on the computer, so the app works without Expo Go
 
 From you:
 - **Browse filters by exclusions** (e.g. "only recipes we can both eat") in the recipe list, after swiping has settled. Today the list is deliberately unfiltered.
+
+Week plan, still open from the PRD (grooming run 1):
+- **US-03 shared top-up deck** ("Swipe to add more" for short meal types: our older matches first, then up to 20 new dishes). Today a short type links to Discover.
+- **US-09 offline**: "Offline — may be out of date" and "Recipes can't be loaded right now…" messages. Today a failed save shows an error.
+- PO to confirm the 🔶 numbers (30 re-swiped matches, ~5 s Generate, ~10 s to the partner, ≤ 10 min session) and open rows DL-009, DL-010, DL-014.
 
 Product ideas:
 - Tabs navigation (Discover · Matches · Tonight · Me) instead of the button list on Home.

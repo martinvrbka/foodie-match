@@ -1,6 +1,6 @@
 # Architecture
 
-How Foodie Match is built today (end of Phase 7, 2026-09-26), and how it should evolve. Product rules live in [SPEC.md](SPEC.md), the reasons behind choices in [DECISIONS.md](DECISIONS.md).
+How Foodie Match is built today (week plan added 2026-09-26), and how it should evolve. Product rules live in [SPEC.md](SPEC.md), the reasons behind choices in [DECISIONS.md](DECISIONS.md).
 
 ## Constraints that shape everything
 
@@ -44,7 +44,7 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 | `src/app/` | Expo Router screens (every file is a route) | Thin: layout, local UI state, calls into `src/data` and `src/logic` |
 | `src/components/` | Reusable UI: buttons, chips, swipe card, recipe row, match overlay | Colors only from `src/theme/tokens.ts` |
 | `src/data/` | Supabase client, auth, React providers and hooks, RPC wrappers, error-code → text | The only place that talks to Supabase |
-| `src/logic/` | Business rules as pure functions: normalization, exclusions, deck, match, matches filters, pairing codes, Tonight outcome, Borda | No React, no Supabase, no `Date.now()`/`Math.random()`; unit-tested |
+| `src/logic/` | Business rules as pure functions: normalization, exclusions, deck, match, matches filters, pairing codes, Tonight outcome, Borda, week plan (dates, selection, Generate, edits, leftovers) | No React, no Supabase, no `Date.now()`/`Math.random()`; unit-tested |
 | `src/i18n/` | All user-facing strings + `t()` | English only today; Czech = add `cs.ts` |
 | `src/theme/` | Color/spacing tokens, WCAG contrast checker | Every text/background pair is contrast-tested |
 | `supabase/migrations/` | Schema, RLS, triggers, RPCs | Append-only; never edit an applied migration |
@@ -59,6 +59,7 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 - **Food:** `recipes`, `recipe_ingredients` (name, measure, raw line), `ingredients` (canonical names, single-parent hierarchy), `user_excluded_ingredients` (explicit exclusions only; descendants are implied).
 - **Activity:** `swipes` (`discover` or `tonight`), `matches` (`via` = `swipe` | `retroactive`, `removed_at`), view `visible_matches` (applies current exclusions at read time).
 - **Tonight:** `tonight_sessions` (stage, filters, shortlist, winner), `tonight_participants` (per-stage "done" flags, top picks), `tonight_rankings`.
+- **Week plan:** `week_plans` (one per couple and week; stage, this week's 30 picks, leftover setting), `week_plan_slots` (one row per switched-on slot: dish, lock, note, who changed it), `week_plan_members` (re-swipe done, last opened), `week_plan_swipes` (this week's re-swipe), `couple_no_leftovers`. Leftover pairs aren't stored; they're derived from the slots.
 
 ### Security model
 
@@ -72,6 +73,7 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 - **Matching:** `discover_swipe` inserts a swipe; a trigger calls `private.is_match` (SQL twin of `isMatch()` in `src/logic/match.ts`) and inserts `matches` with `via = 'swipe'`. Removing an exclusion or pairing runs `refresh_matches`, which creates `via = 'retroactive'` matches. The match rule therefore exists twice, TS and SQL, and both must change together.
 - **Deck:** the phone loads all recipes (~800), all recipe→ingredient pairs (~8k rows, paged) and both partners' exclusions and swipes, then the pure `buildDeck()` decides the order. Static data is cached for the app session.
 - **Live updates:** one app-wide `ProfileProvider` subscribes to `profiles`; `MatchProvider` subscribes to new matches and shows "It's a match!" over any screen. Screens with live data (invites, match list, Tonight) open their own channels with unique names and simply reload on any change.
+- **Week plan:** `setup → choosing → generated → accepted`. The phone computes the selection (`pickSelection`), the plan (`generatePlan`) and every edit (`swapSlot`, `moveSlot`…) and saves only changed slots with `plan_write_slots`; the server validates couple, stage, dates and that dishes are shared matches. Realtime on plans/slots/members reloads both phones (debounced, since Generate writes many rows). Plans that are over are deleted on load.
 - **Tonight:** a small state machine (`swiping → choosing | shortlisting → ranking | ranking → done`). Each phone computes the next stage with `tonightAdvance()` once both partners have finished, and calls `tonight_advance`, which accepts only the first write for that stage. Both phones may try; exactly one wins.
 
 ### Testing and delivery
@@ -89,6 +91,7 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 5. **Tonight RPCs are called through a loosely typed wrapper** (`src/data/tonight.ts`), unlike the rest of the data layer.
 6. **Navigation is a list of buttons on Home**, not tabs.
 7. **No CI:** tests run locally and in the pre-commit hook only.
+8. **Week plan rules run on the phone only**; the server checks membership and match rules, not leftover timing. Two phones editing the same slot at once: last write wins.
 
 ## Recommended future architecture
 

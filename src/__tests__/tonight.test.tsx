@@ -49,6 +49,9 @@ jest.mock('../data/tonight', () => ({
   tonightDismissed: () => null,
   dismissTonight: (...args: unknown[]) => mockDismiss(...args),
 }));
+// Week plan: null = no plan, so the round works as before.
+const mockWeek = { data: null as unknown, saveEdit: jest.fn(() => Promise.resolve()) };
+jest.mock('../data/week', () => ({ ...jest.requireActual('../data/week'), useWeek: () => mockWeek }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() } }));
 jest.mock('../components/SwipeCard', () => ({ CardFace: () => null, SwipeCard: () => null }));
 
@@ -63,7 +66,10 @@ const session = (over = {}) => ({
   ...over,
 });
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockWeek.data = null;
+});
 
 it('ranking: tapping in order submits that order', async () => {
   mockTonight.data = { session: session(), me: participant(), partner: participant(), mySwiped: new Set(), history: [] };
@@ -131,4 +137,47 @@ it('start form: shows how many matches fit and starts with the chosen filter', a
   await userEvent.setup().press(screen.getByRole('switch', { name: '≤ 30 min' }));
   await userEvent.setup().press(screen.getByRole('button', { name: 'Start' }));
   expect(mockTonight.start).toHaveBeenCalledWith({ maxMinutes: 30, cuisine: null });
+});
+
+describe('with a week plan', () => {
+  const TODAY = '2026-09-28';
+  const slot = (day: string, meal: string, recipeId: number | null) => ({
+    day, meal, recipeId, locked: false, note: null, changedBy: 'me', changedAt: null,
+  });
+  const withDinner = () => {
+    const p = {
+      id: 'p1', weekStart: TODAY, firstDay: TODAY, createdOn: '2026-09-27', status: 'accepted', leftovers: 3,
+      picks: [], startedBy: 'me', generatedBy: 'me', generatedAt: null, acceptedBy: 'me', phase: 'active',
+    };
+    // Curry tonight, its leftover tomorrow lunch.
+    const slots = [slot(TODAY, 'dinner', 2), slot('2026-09-29', 'lunch', 2)];
+    return { today: TODAY, plans: [p], slots: new Map([['p1', slots]]), members: new Map(), swipes: new Map(), noLeftovers: new Set() };
+  };
+
+  it("offers tonight's planned dinner first; \"Choose something else\" opens the usual round", async () => {
+    mockWeek.data = withDinner();
+    mockTonight.data = { session: null, me: null, partner: null, mySwiped: new Set(), history: [] };
+    await render(<Tonight />);
+    expect(await screen.findByText("Tonight's plan")).toBeTruthy();
+    expect(await screen.findByText('Curry')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Eat this' })).toBeTruthy();
+    await userEvent.setup().press(screen.getByRole('button', { name: 'Choose something else' }));
+    expect(await screen.findByRole('button', { name: 'Start' })).toBeTruthy();
+  });
+
+  it("the round's winner replaces tonight's dinner and removes its leftover", async () => {
+    mockWeek.data = withDinner();
+    const completedAt = new Date(2026, 8, 28, 19, 0).toISOString(); // this evening, local time
+    mockTonight.data = {
+      session: session({ status: 'done', winnerRecipeId: 1, completedAt }),
+      me: participant(), partner: participant(), mySwiped: new Set(), history: [],
+    };
+    await render(<Tonight />);
+    expect(await screen.findByText("Tonight we're cooking")).toBeTruthy();
+    const [, , after] = mockWeek.saveEdit.mock.calls[0] as unknown as [string, unknown, { day: string; meal: string; recipeId: number | null; note: string | null }[]];
+    expect(after).toEqual([
+      expect.objectContaining({ day: TODAY, meal: 'dinner', recipeId: 1 }),
+      expect.objectContaining({ day: '2026-09-29', meal: 'lunch', recipeId: null, note: 'leftover_removed' }),
+    ]);
+  });
 });

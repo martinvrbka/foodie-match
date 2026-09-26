@@ -11,6 +11,7 @@ import { useExclusionStates } from '../../data/exclusions';
 import { isVisibleMatch, removeMatch } from '../../data/matches';
 import { useProfile } from '../../data/profile';
 import { getRecipe, photoUrl, type RecipeDetail } from '../../data/recipes';
+import { isNoLeftovers, setLeftoversOk } from '../../data/week';
 import { t } from '../../i18n';
 import { displayName } from '../../logic/exclusions';
 import { colors, font, radius, spacing } from '../../theme/tokens';
@@ -26,11 +27,14 @@ export default function Recipe() {
 
   const [matched, setMatched] = useState(false);
   const [removeError, setRemoveError] = useState<unknown>(null);
+  // Marked "Not good for leftovers" in the week plan; undone here too.
+  const [noLeftovers, setNoLeftovers] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
     getRecipe(Number(id)).then(setRecipe, setError);
     isVisibleMatch(Number(id)).then(setMatched, () => setMatched(false));
+    isNoLeftovers(Number(id)).then(setNoLeftovers, () => setNoLeftovers(false));
   }, [id]);
   useEffect(load, [load]);
 
@@ -142,6 +146,16 @@ export default function Recipe() {
                   ])
                 }
               />
+              {noLeftovers ? (
+                <Button
+                  label={t('week.goodLeftoversAgain')}
+                  variant="text"
+                  onPress={() => {
+                    setRemoveError(null);
+                    setLeftoversOk(recipe.id, true).then(() => setNoLeftovers(false), setRemoveError);
+                  }}
+                />
+              ) : null}
             </View>
           ) : null}
 

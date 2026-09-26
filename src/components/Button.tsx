@@ -7,14 +7,17 @@ interface Props {
   variant?: 'primary' | 'text';
   disabled?: boolean;
   busy?: boolean;
+  /** Screen-reader label when the visible label is a symbol (e.g. "+"). */
+  accessibilityLabel?: string;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled, busy }: Props) {
+export function Button({ label, onPress, variant = 'primary', disabled, busy, accessibilityLabel }: Props) {
   const primary = variant === 'primary';
   const inactive = disabled || busy;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!inactive, busy: !!busy }}
       disabled={inactive}
       onPress={onPress}

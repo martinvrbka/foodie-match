@@ -9,6 +9,9 @@ import { errorText } from '../data/errors';
 import { matchesLastSeen, useMatchList } from '../data/matches';
 import { useInvites } from '../data/pairing';
 import { useTonight } from '../data/tonight';
+import { useWeek } from '../data/week';
+import { rangeLabel } from '../components/week/format';
+import { isGenerated } from '../logic/week';
 import { useProfile } from '../data/profile';
 import { t } from '../i18n';
 import { countNewMatches } from '../logic/matches';
@@ -27,6 +30,14 @@ export default function Home() {
   // The partner started a round I haven't swiped in yet.
   const tonightInvite =
     tonightActive && tonightSession.startedBy !== userId && tonightSession.status === 'swiping' && !tonight.data?.me?.swipeDone;
+  // The partner is planning a week I haven't chosen dishes for yet.
+  const week = useWeek();
+  const planInvite = week.data?.plans.find(
+    (p) =>
+      !isGenerated(p.status) &&
+      p.startedBy !== userId &&
+      !week.data?.members.get(p.id)?.find((m) => m.userId === userId)?.reswipeDone,
+  );
   // Re-read "last seen" whenever Home is shown again (e.g. back from Matches).
   const [lastSeen, setLastSeen] = useState(() => matchesLastSeen(userId));
   useFocusEffect(useCallback(() => setLastSeen(matchesLastSeen(userId)), [userId]));
@@ -88,6 +99,16 @@ export default function Home() {
             label={tonightActive ? t('tonight.continue') : t('tonight.cta')}
             onPress={() => router.push('/tonight')}
           />
+        ) : null}
+        {partner && planInvite ? (
+          <View style={styles.invite} accessibilityRole="alert">
+            <Text style={styles.inviteText}>
+              {t('week.inProgress', { range: rangeLabel(planInvite.firstDay, planInvite.weekStart) })}
+            </Text>
+            <Button label={t('week.join')} onPress={() => router.push('/week')} />
+          </View>
+        ) : partner ? (
+          <Button label={t('week.cta')} variant="text" onPress={() => router.push('/week')} />
         ) : null}
         <Button
           label={t('discover.title')}

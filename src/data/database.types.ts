@@ -23,7 +23,32 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "couples": {
+            "couple_no_leftovers": {
+                  Row: {
+                    "couple_id": string,"created_at": string,"recipe_id": number
+                  }
+                  Insert: {
+                    "couple_id": string,"created_at"?: string,"recipe_id": number
+                  }
+                  Update: {
+                    "couple_id"?: string,"created_at"?: string,"recipe_id"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "couple_no_leftovers_couple_id_fkey"
+      columns: ["couple_id"]
+isOneToOne: false
+      referencedRelation: "couples"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "couple_no_leftovers_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"couples": {
                   Row: {
                     "created_at": string,"dissolved_at": string | null,"id": string
                   }
@@ -318,6 +343,130 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"week_plan_members": {
+                  Row: {
+                    "plan_id": string,"reswipe_done": boolean,"seen_at": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "plan_id": string,"reswipe_done"?: boolean,"seen_at"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "plan_id"?: string,"reswipe_done"?: boolean,"seen_at"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "week_plan_members_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "week_plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plan_members_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"week_plan_slots": {
+                  Row: {
+                    "changed_at": string | null,"changed_by": string | null,"day": string,"locked": boolean,"meal": string,"note": string | null,"plan_id": string,"recipe_id": number | null
+                  }
+                  Insert: {
+                    "changed_at"?: string | null,"changed_by"?: string | null,"day": string,"locked"?: boolean,"meal": string,"note"?: string | null,"plan_id": string,"recipe_id"?: number | null
+                  }
+                  Update: {
+                    "changed_at"?: string | null,"changed_by"?: string | null,"day"?: string,"locked"?: boolean,"meal"?: string,"note"?: string | null,"plan_id"?: string,"recipe_id"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "week_plan_slots_changed_by_fkey"
+      columns: ["changed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plan_slots_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "week_plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plan_slots_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"week_plan_swipes": {
+                  Row: {
+                    "created_at": string,"liked": boolean,"plan_id": string,"recipe_id": number,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"liked": boolean,"plan_id": string,"recipe_id": number,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"liked"?: boolean,"plan_id"?: string,"recipe_id"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "week_plan_swipes_plan_id_fkey"
+      columns: ["plan_id"]
+isOneToOne: false
+      referencedRelation: "week_plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plan_swipes_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plan_swipes_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"week_plans": {
+                  Row: {
+                    "accepted_at": string | null,"accepted_by": string | null,"couple_id": string,"created_at": string,"created_on": string,"first_day": string,"generated_at": string | null,"generated_by": string | null,"id": string,"leftovers": number,"picks": (number)[],"started_by": string,"status": string,"week_start": string
+                  }
+                  Insert: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"couple_id": string,"created_at"?: string,"created_on": string,"first_day": string,"generated_at"?: string | null,"generated_by"?: string | null,"id"?: string,"leftovers"?: number,"picks"?: (number)[],"started_by": string,"status"?: string,"week_start": string
+                  }
+                  Update: {
+                    "accepted_at"?: string | null,"accepted_by"?: string | null,"couple_id"?: string,"created_at"?: string,"created_on"?: string,"first_day"?: string,"generated_at"?: string | null,"generated_by"?: string | null,"id"?: string,"leftovers"?: number,"picks"?: (number)[],"started_by"?: string,"status"?: string,"week_start"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "week_plans_accepted_by_fkey"
+      columns: ["accepted_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plans_couple_id_fkey"
+      columns: ["couple_id"]
+isOneToOne: false
+      referencedRelation: "couples"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plans_generated_by_fkey"
+      columns: ["generated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "week_plans_started_by_fkey"
+      columns: ["started_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -363,6 +512,42 @@ isOneToOne: false
               "from_name": string,"invite_id": string,"sent_at": string
             }[]
                            },
+"plan_accept":
+{ Args: { "p_plan": string }; Returns: undefined
+                           },
+"plan_begin_choosing":
+{ Args: { "p_picks": (number)[],"p_plan": string }; Returns: boolean
+                           },
+"plan_cleanup":
+{ Args: { "p_today": string }; Returns: undefined
+                           },
+"plan_delete":
+{ Args: { "p_plan": string }; Returns: undefined
+                           },
+"plan_finish_reswipe":
+{ Args: { "p_plan": string }; Returns: undefined
+                           },
+"plan_mark_seen":
+{ Args: { "p_plan": string }; Returns: string
+                           },
+"plan_reswipe":
+{ Args: { "p_liked": boolean,"p_plan": string,"p_recipe_id": number }; Returns: undefined
+                           },
+"plan_set_leftovers":
+{ Args: { "p_leftovers": number,"p_plan": string }; Returns: undefined
+                           },
+"plan_setup":
+{ Args: { "p_cells": Json,"p_plan": string }; Returns: undefined
+                           },
+"plan_start":
+{ Args: { "p_first_day": string,"p_today": string }; Returns: Json
+                           },
+"plan_undo_reswipe":
+{ Args: { "p_plan": string }; Returns: number
+                           },
+"plan_write_slots":
+{ Args: { "p_generate": boolean,"p_plan": string,"p_slots": Json,"p_today": string }; Returns: undefined
+                           },
 "redeem_pairing_code":
 { Args: { "p_code": string }; Returns: Json
                            },
@@ -374,6 +559,9 @@ isOneToOne: false
                            },
 "send_pairing_invite":
 { Args: { "p_email": string }; Returns: string
+                           },
+"set_leftovers_ok":
+{ Args: { "p_ok": boolean,"p_recipe_id": number }; Returns: undefined
                            },
 "start_tonight":
 { Args: { "p_filters"?: Json }; Returns: string

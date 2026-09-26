@@ -65,6 +65,26 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Winner screen stays until "Done"** on each phone (dismissed session id in localStorage). A partner who started a round shows a "Join" banner on Home.
 - **2026-09-26 — Cooked history = sessions with `status = 'done'`.** No separate table.
 
+## Week plan
+Source: `final-prd.md` of grooming run 1 (2026-09-26). Where the PRD left a choice open or a 🔶 number unconfirmed, the choice is below.
+- **2026-09-26 — Built the PRD's walking skeleton plus US-06 and US-08.** US-03 (shared top-up deck) and US-09 (offline/unreachable indicators) are deferred; a short slot type links to Discover instead of "Swipe to add more". Failed saves still show an error, so nothing is lost silently (DoD-08).
+- **2026-09-26 — Tech answer: TheMealDB categories suffice for slot types.** Of 790 recipes: Breakfast 19, Starter 14, Side 84, Dessert 167. Breakfast = `Breakfast`; snack = `Starter`/`Side`/`Dessert`.
+- **2026-09-26 — Lunch and dinner exclude desserts** (the PRD says "any matched dish"; a cake for dinner isn't a meal). Manual swaps still allow anything.
+- **2026-09-26 — 🔶 numbers used as proposed:** 30-match re-swipe, default 3 leftover meals (max 7), leftovers 1–2 days after cooking. Generate runs on the phone in milliseconds; partner updates arrive by Realtime within a second or two (DL-023, free tier).
+- **2026-09-26 — "Some matches per slot type" (US-02) = a quota of the 30 proportional to that type's slots**, scarce types first; the rest random.
+- **2026-09-26 — Leftovers are derived, not stored**: a dish exactly twice, 1–2 days apart, is a pair; earlier = cook a double portion. Generate pairs only lunch/dinner, preferring dinner → next day's lunch, and uses dishes that can't fill breakfast/snack first. The remaining slots use maximum bipartite matching so no slot is left empty needlessly.
+- **2026-09-26 — Plans are computed on the phone** (`src/logic/week.ts`, `plan.ts`) and saved per slot with `plan_write_slots`, like Tonight. The server checks couple, stage, past days, locks on Generate, and that dishes are visible matches (Generate: also in this week's picks and not rejected). Per-slot writes mean edits of different slots by both partners never overwrite each other; the same slot: last write wins.
+- **2026-09-26 — The first "Choose this week's dishes" tap picks the 30** (`plan_begin_choosing` keeps only the first call), so both partners get the same selection. Days and meals can be changed only before that; the leftover setting any time.
+- **2026-09-26 — Dates are the phone's local date**, sent as `p_today` and accepted within ±1 day of the server's. Plans that are over are deleted (`plan_cleanup` on every load; SQL twin of `planPhase`), so no history is kept (DoD-10).
+- **2026-09-26 — Locks:** Regenerate and automatic leftover removal never change a locked slot; hand edits require unlocking first. Exception: a Tonight winner replaces tonight's dinner even when locked, because both just decided.
+- **2026-09-26 — Move exchanges the two slots' dishes**; a cook or leftover must keep its role 1–2 days apart.
+- **2026-09-26 — Tonight winner planned elsewhere later in the week** is taken out of that slot ("Eaten tonight instead…") unless it becomes tonight's leftover (1–2 days later). Only applied when a dinner was planned tonight, and only for a round finished today.
+- **2026-09-26 — Late re-swipes (DL-028) are accepted until that partner's re-swipe is closed**, which happens as soon as their phone shows the generated plan. A late rejection empties the dish's unlocked slots on the server ("[Name] passed on this").
+- **2026-09-26 — "Changed by [name]"** marks slots the partner saved after my previous opening of the plan (`week_plan_members.seen_at`). Generate marks every slot it saves.
+- **2026-09-26 — "Good for leftovers again" is on the recipe screen** (opened from Matches), in addition to the calendar.
+- **2026-09-26 — Added "Delete this plan"** (not in the PRD) to start a week over; confirmed, for both partners.
+- **2026-09-26 — Unpairing deletes the couple's plans and leftover marks**, like matches.
+
 ## Tooling
 - **2026-09-26 — Expo SDK 57, routes in `src/app/`** (scaffold default).
 - **2026-09-26 — `react-dom` pinned to the React version**: an optional peer dep otherwise breaks `npx expo install`.

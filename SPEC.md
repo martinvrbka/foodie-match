@@ -38,6 +38,10 @@ Personal MVP for 2 users. Optimize for working end-to-end and feeling good to us
 - `tonight_sessions` (id, couple_id, started_by, status, filters, winner_recipe_id, created_at, completed_at)
 - `tonight_participants` (session_id, user_id, swipe_done, rank_done)
 - `tonight_rankings` (session_id, user_id, recipe_id, rank)
+- `week_plans` (id, couple_id, week_start, first_day, created_on, status `setup` | `choosing` | `generated` | `accepted`, leftovers, picks, started_by, generated_by/at, accepted_by/at): one per couple and week
+- `week_plan_slots` (plan_id, day, meal `breakfast` | `lunch` | `snack` | `dinner`, recipe_id, locked, note, changed_by, changed_at): a row per switched-on slot
+- `week_plan_members` (plan_id, user_id, reswipe_done, seen_at), `week_plan_swipes` (plan_id, user_id, recipe_id, liked)
+- `couple_no_leftovers` (couple_id, recipe_id): "Not good for leftovers"
 
 RLS: users may only read and write data belonging to themselves or their couple.
 
@@ -93,7 +97,18 @@ RLS: users may only read and write data belonging to themselves or their couple.
 - Winner screen on both phones simultaneously: big photo, "Tonight we're cooking: X", button to open the recipe. Saved to a "Cooked history" list.
 - Waiting state ("Waiting for {partner}…") when one partner finishes first.
 
-### 7. Visual design
+### 7. Weekly meal plan
+Source: grooming package `foodie-match-couple-meal-plan/run-1_2026-09-26/final-prd.md`. Built: US-01, 02, 04, 05, 06, 07, 08. Not yet: US-03 (top-up deck), US-09 (offline indicators); see ROADMAP.md.
+- **Start (US-01):** either partner taps "Plan next week" (Mon–Sun) or, while this week has no plan, "Plan the rest of this week" (today–Sunday). One plan per week; the second partner joins it ("[Partner] already started planning"). Grid of days × breakfast/lunch/snack/dinner, lunch and dinner on by default; "Leftover meals per week" defaults to 3.
+- **Re-swipe (US-02):** both partners re-swipe the same ≤ 30 matches (every switched-on meal type represented). Like = candidate this week; left = not this week only (still a match, still usable by swap). Undo last; "Enough — plan with these" ends only my re-swipe. Matches outside the 30 aren't planned this week.
+- **Availability:** per meal type (lunch and dinner together) "Breakfast: 1 dish for 7 slots", marked short when Generate would leave slots empty (leftovers counted). With no candidates: "You need matches to plan a week".
+- **Generate (US-04):** either partner, any time after the re-swipe started. Fills switched-on slots with candidates allowed there (breakfast = Breakfast category; snack = Starter/Side/Dessert; lunch/dinner = not Dessert). Plans the leftover setting's number of pairs (same dish again 1–2 days later, never more than twice, never a "Not good for leftovers" dish). Unfillable = "Nothing matched — pick a dish or leave empty". Unreached matches count as liked; rejected ones never used. A partner still swiping sees "[Name] made the plan — review it now"; their in-flight rejections empty those slots ("[Name] passed on this").
+- **Edit (US-05, 06):** swap (any match, any slot), move (exchanges with the target), clear, lock; Regenerate refills unlocked slots from today on. Past days are read-only. A dish swapped in 1–2 days after its first slot becomes a leftover; any other repeat: "[Dish] is already planned this week". Changing a cook-day meal empties its leftover ("Leftover removed — pick a dish or leave empty"), or keeps it if locked ("No longer a leftover — cook it fresh or unlock"). Moving a leftover outside 1–2 days after cooking: "Leftovers must be eaten 1–2 days after cooking". "Not good for leftovers" (remembered for later weeks) empties its planned leftover; "Good for leftovers again" in the calendar or on the recipe. Partner changes show "Changed by [name]" until I next open the plan.
+- **Prep schedule:** "Cook a double portion on [day]" per leftover pair, naming the leftover meal.
+- **Accept (US-07):** either partner alone ("Use this plan" → "Accepted by [name]"). A generated plan not accepted becomes active on its first day ("This plan started without being accepted"); one never generated is deleted then. A plan is deleted when its week ends: no history, no eaten-tracking.
+- **Tonight (US-08):** with tonight's dinner planned, "What do we eat tonight?" first shows it with "Eat this" / "Choose something else"; the round's winner replaces tonight's dinner (and its leftover is removed).
+
+### 8. Visual design
 Warm, appetite-associated colors as theme tokens (no hardcoded colors in components):
 - Primary (tomato red) `#E4572E`: like actions, icons, large bold text. CTA buttons with normal-size labels use `primaryStrong` `#C8431F` (AA).
 - Secondary (saffron) `#F29E4C`; Accent (mustard) `#F6C85F` for highlights and match celebration; Fresh (herb green) `#6A994E` for success/match confirmations only.
@@ -104,7 +119,7 @@ Warm, appetite-associated colors as theme tokens (no hardcoded colors in compone
 - Rounded cards, generous spacing, playful but clean. Satisfying swipe physics; haptics on like and match.
 
 ## Out of scope
-Shopping lists, nutrition, user-uploaded recipes or other import sources (keep `recipes` and the seed script generic for later), more than 2 people per couple, push notifications while the app is closed, iOS, store publishing, sending real emails.
+Shopping lists, nutrition, portion scaling, planning more than one week ahead, meal-plan history, user-uploaded recipes or other import sources (keep `recipes` and the seed script generic for later), more than 2 people per couple, push notifications while the app is closed, iOS, store publishing, sending real emails.
 
 ## Definition of done
 - Two real Android phones can: sign up, set exclusions, pair via QR **and** email invite, swipe, get a real-time match, run a Tonight session end-to-end, see a winner.
