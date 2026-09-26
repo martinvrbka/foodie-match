@@ -88,7 +88,7 @@ RLS: users may only read and write data belonging to themselves or their couple.
 - When both finish:
   - 0 liked by both → show recipes liked by at least one partner and let them pick, or reshuffle.
   - 1 liked by both → winner.
-  - 2+ liked by both → **Round 2, ranking**: each partner drag-orders the shortlist. If it has more than 5, each first picks a top 5 and the union (up to 10) is ranked.
+  - 2+ liked by both → **Round 2, ranking**: each partner puts the shortlist in order (tap in order of preference). If it has more than 5, each first picks a top 5 and the union (up to 10) is ranked.
 - **Borda count** (rank 1 of N gets N points, etc.). Tie-break: shorter cook time, then random. Pure, unit-tested function.
 - Winner screen on both phones simultaneously: big photo, "Tonight we're cooking: X", button to open the recipe. Saved to a "Cooked history" list.
 - Waiting state ("Waiting for {partner}…") when one partner finishes first.
