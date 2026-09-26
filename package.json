@@ -39,7 +39,10 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "seed": "node --experimental-strip-types scripts/seed/themealdb.ts",
-    "prepare": "git config core.hooksPath .githooks || true"
+    "prepare": "git config core.hooksPath .githooks || true",
+    "test:db": "jest -c jest.db.config.js --runInBand",
+    "db:types": "supabase gen types typescript --local > src/data/database.types.ts",
+    "db:push": "scripts/db-push.sh"
   },
   "private": true,
   "jest": {
@@ -47,5 +50,8 @@
     "testMatch": [
       "**/__tests__/**/*.test.ts?(x)"
     ]
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

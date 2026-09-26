@@ -14,11 +14,15 @@ Tinder-style recipe picker for a couple (2 users). Each partner sets ingredients
 Expo SDK 57 + TypeScript (strict, TS 6), Expo Router, Supabase (Postgres + RLS + Realtime + auth), reanimated 4 + gesture-handler, expo-camera, react-native-qrcode-svg, expo-haptics, expo-image, Jest (`jest-expo`).
 
 ## Commands
-Node comes from nvm: run `source ~/.nvm/nvm.sh` first in a non-login shell.
+Node 24 (`.nvmrc`) comes from nvm: run `source ~/.nvm/nvm.sh && nvm use` first in a non-login shell.
 
 ```bash
 npx expo start                 # dev server; open in Expo Go on both phones
 npm test                       # unit tests (Jest)
+npm run test:db                # DB integration tests; needs Docker + `npx supabase start`
+npx supabase db reset          # re-apply all migrations to the local DB
+npm run db:types               # regenerate src/data/database.types.ts after SQL changes
+npm run db:push                # apply new migrations to the cloud project (needs SUPABASE_ACCESS_TOKEN + SUPABASE_DB_PASSWORD in .env)
 npm run typecheck              # tsc --noEmit
 npx expo-doctor                # dependency/config sanity
 npx expo install <pkg>         # add deps (never plain npm install <pkg>)
@@ -32,9 +36,9 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 - `src/logic/` — pure business logic (normalize, deck, match, Borda, Tonight outcome) + tests. See its CLAUDE.md.
 - `src/theme/` — color/spacing tokens and WCAG contrast checker.
 - `src/i18n/` — all UI strings (`en.ts`) and `t()`.
-- `src/data/` — Supabase client, queries, realtime hooks *(Phase 1)*.
-- `src/components/` — reusable UI (card stack, chips, buttons) *(Phase 1+)*.
-- `supabase/migrations/` — schema, RLS, triggers, RPCs as SQL *(Phase 1)*.
+- `src/data/` — Supabase client, auth, queries, realtime hooks, error → string mapping, generated DB types.
+- `src/components/` — reusable UI (buttons, fields, later card stack and chips).
+- `supabase/migrations/` — schema, RLS, triggers, RPCs as SQL. `supabase/tests/` — DB integration tests (`npm run test:db`).
 - `scripts/seed/` — TheMealDB import (Node, run locally) *(Phase 2)*.
 - `data/` — `ingredient-map.json`: synonyms, categories, parents *(Phase 2)*.
 - `assets/` — app icons and splash.
@@ -45,13 +49,14 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 - Colors only from `src/theme/tokens.ts`; no hex literals in components. A new text/background pair must be added to `textPairs` (the contrast test enforces AA).
 - User-facing strings only via `t('section.key', params)` from `src/i18n`; never inline English in components.
 - Anything that changes couple membership or match state goes through a Supabase RPC, never a direct client table write.
-- SQL changes = new migration file; never edit an applied migration.
+- SQL changes = new migration file; never edit an applied migration. Supabase grants anon/authenticated full access to new `public` tables by default: every new table needs RLS enabled and explicit `revoke`/`grant` like `*_rules.sql`.
+- RPCs raise errors as a short code in the message (`raise exception 'code_used'`); map new codes to strings in `src/data/errors.ts`.
 - If the SQL match function changes, update `isMatch()` in `src/logic/` too (and vice versa).
 - Record assumptions in `DECISIONS.md` rather than guessing silently.
 
 ## Testing rules
 - Every change to business logic (filtering, matching, ranking, ingredient normalization) must include unit tests. Keep this logic in pure functions so it's testable without UI or DB.
-- DB-side logic (RLS policies, match trigger/RPC) must have integration tests against local Supabase.
+- DB-side logic (RLS policies, match trigger/RPC) must have integration tests against local Supabase (`supabase/tests/`, run with `npm run test:db`; not part of the pre-commit hook).
 - UI: only a few tests for critical flows (swipe saves like, pairing, Tonight winner). No snapshot tests.
 - Bug fixes: first write a failing test that reproduces the bug, then fix it.
 - Never modify or delete an existing test to make it pass without explicitly telling me why.

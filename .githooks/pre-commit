@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Blocks the commit if unit tests fail. Enabled by `npm install` (package.json "prepare").
-# Commits from VS Code may not have nvm's node on PATH, so load it if needed.
-if ! command -v npm >/dev/null 2>&1 && [ -s "$HOME/.nvm/nvm.sh" ]; then
-  . "$HOME/.nvm/nvm.sh"
+# Use the project's Node version (.nvmrc); commits from VS Code may not have it on PATH.
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+  . "$HOME/.nvm/nvm.sh" >/dev/null
+  nvm use --silent >/dev/null 2>&1 || true
 fi
 if ! npm test --silent -- --ci; then
   echo "pre-commit: npm test failed, commit blocked." >&2

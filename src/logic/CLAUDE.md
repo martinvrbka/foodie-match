@@ -17,11 +17,11 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - Among recipes both can eat: partner-liked-but-unseen ones are interleaved (about every 3rd card while any remain); the rest is shuffled with the injected RNG.
 - Unpaired ⇒ no partner flag and no partner ordering.
 
-## Match (`isMatch`)
+## Match (`match.ts`: `expandExclusions`, `isCompatible`, `isMatch`)
 - Match ⇔ both liked in `discover` **and** no ingredient in the union of both partners' expanded exclusions.
 - Retroactive: re-evaluating after an exclusion change can create matches from existing likes. It never deletes; hiding is done by `visible_matches` at read time.
 - A match with `removed_at` set is never re-created.
-- Mirrored in SQL (`supabase/migrations`): change both together.
+- Mirrored in SQL (`private.is_match`, `private.excluded_ingredient_ids` in `*_rules.sql`): change both together.
 
 ## Tonight
 - Outcome after swipes: 0 both-liked → pick from union of likes (or reshuffle); 1 → winner; 2+ → ranking. Shortlist > 5 → union of each partner's top 5 (up to 10).

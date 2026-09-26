@@ -6,6 +6,7 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — `primaryStrong` `#C8431F` for CTA buttons.** Brand `#E4572E` with white text is ~3.7:1 (fails AA for normal text); it stays for icons and large bold text. Dark text on saffron/mustard/herb. Enforced by `src/theme/__tests__/contrast.test.ts`.
 
 ## Auth
+- **2026-09-26 — Session stored with `expo-sqlite/localStorage`** (bundled in Expo Go) instead of Supabase's SecureStore+AES recipe, which needs extra non-Expo packages. Acceptable for a personal app.
 - **2026-09-26 — Email + password sign-in, "Confirm email" off.** No magic links (`exp://` deep links differ per device in Expo Go) and no emailed OTP codes (free-tier built-in email allows only a few sends/hour). The app never sends email.
 
 ## Recipes & ingredients
@@ -18,14 +19,17 @@ Short, dated. Read before changing business rules. Replace entries that become o
 ## Pairing
 - **2026-09-26 — Pairing codes: 6 chars, no 0/O/1/I/L.** Readable when typed by hand.
 - **2026-09-26 — Pairing actions are SECURITY DEFINER RPCs.** Under RLS, B can't read A's code/invite rows directly.
-- **2026-09-26 — Accepting an invite declines your other pending invites.** A user can only be in one couple.
+- **2026-09-26 — Pairing by either method declines all pending invites to/from both partners** and deletes their unused codes. A user can only be in one couple (also enforced by a trigger: max 2 members).
+- **2026-09-26 — Inviter can't cancel an invite** (MVP); a wrong-email invite just stays pending until either side pairs.
+- **2026-09-26 — RPC errors are short codes in the exception message** (`code_expired`, `already_paired`, …), mapped to strings in `src/data/errors.ts`.
 - **2026-09-26 — Swiping before pairing is allowed.** No partner badge/ordering until paired; pairing evaluates matches from existing swipe history.
 - **2026-09-26 — Unpair = `couples.dissolved_at` + delete that couple's matches.** Swipes and cooked history stay; re-pairing recomputes matches.
 
 ## Discover & matching
 - **2026-09-26 — Deck built on the phone** by pure `buildDeck()` (~300 recipes load once) so exclusion changes apply instantly.
 - **2026-09-26 — "Mixed in" = roughly every 3rd card is partner-liked** while any remain; otherwise random (RNG injected for tests).
-- **2026-09-26 — Undo = last discover swipe only.** Undoing a like that created a match deletes that match.
+- **2026-09-26 — Discover swipes go through RPC `discover_swipe`** (they can create matches); clients have no direct write access to `swipes`/`matches`. A second swipe on the same recipe is ignored (only undo changes one).
+- **2026-09-26 — Undo = last discover swipe only** (the client allows one step). Undoing a like deletes that recipe's match unless the user removed it (removed rows stay so they're never re-created).
 - **2026-09-26 — Matches are hidden, not deleted.** A `matches` row = both liked + compatible when created; view `visible_matches` applies both partners' current exclusions at read time. User-removed matches get `removed_at` and are never re-created.
 - **2026-09-26 — Retroactive matches show a small "N new matches" banner**; the full "It's a match!" animation is for live swipes only.
 - **2026-09-26 — Match rule implemented twice:** pure TS `isMatch()` is the tested spec; a mirrored SQL function runs in triggers (needed for realtime on both phones). Change both together.
@@ -41,5 +45,8 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Expo SDK 57, routes in `src/app/`** (scaffold default).
 - **2026-09-26 — `react-dom` pinned to the React version**: an optional peer dep otherwise breaks `npx expo install`.
 - **2026-09-26 — TS 6 needs `"types": ["jest"]`** in `tsconfig.json`; it no longer auto-includes `@types/*`.
-- **2026-09-26 — Node via nvm** (`source ~/.nvm/nvm.sh` in non-login shells).
+- **2026-09-26 — Node 24 LTS via nvm, pinned in `.nvmrc`.** Node 20 is EOL and lacks the WebSocket global supabase-js needs outside the app.
+- **2026-09-26 — DB integration tests use Jest + supabase-js against local Supabase in Docker** (`npm run test:db`), signing up real test users. Separate from `npm test` so commits don't need Docker. They run with plain babel, not the `jest-expo` preset, whose React Native polyfills break `fetch` in Node.
+- **2026-09-26 — Local Supabase: storage, edge functions and analytics disabled; sign-up rate limit raised** (tests create many users). Cloud settings are unaffected.
+- **2026-09-26 — Cloud schema is deployed with `npm run db:push`** (Supabase CLI + access token + DB password in `.env`), not by pasting SQL.
 - **2026-09-26 — Private GitHub repo `martinvrbka/foodie-match`**; push after every phase.
