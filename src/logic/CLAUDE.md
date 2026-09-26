@@ -13,6 +13,11 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - `keywords` exist so animal products are never missed; explicit entries fix false hits (coconut milk, peanut butter, beef tomato, vegan butter).
 - `ingredientTable` returns parents before children and throws on cycles.
 
+## Exclusion list (`exclusions.ts`)
+- `exclusionStates`: explicit / implied (via nearest explicitly excluded ancestor) / none.
+- Presets (`PRESETS`): vegetarian = meat + seafood, no pork = pork, no seafood = seafood, no dairy = dairy. `togglePreset` returns ids to add/remove; never touches other exclusions.
+- `searchIngredients`: fixed category order, alphabetical inside; query matches raw substring or its normalized form (synonyms, plurals).
+
 ## Recipe text (`recipes.ts`)
 - `splitInstructions`: one step per line, "STEP n" labels and "n." numbering removed; a single paragraph over 400 chars is split into sentences.
 - `estimateCookTime`: 5 + 1.5 min per ingredient + every mentioned duration (upper bound of ranges, each capped at 240), rounded to 5, clamped 10–300.

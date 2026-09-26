@@ -42,7 +42,7 @@
     "seed": "node --env-file-if-exists=.env --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed/themealdb.ts",
     "prepare": "git config core.hooksPath .githooks || true",
     "test:db": "jest -c jest.db.config.js --runInBand",
-    "db:types": "supabase gen types typescript --local > src/data/database.types.ts",
+    "db:types": "supabase gen types typescript --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres > src/data/database.types.tmp && mv src/data/database.types.tmp src/data/database.types.ts",
     "db:push": "scripts/db-push.sh"
   },
   "private": true,

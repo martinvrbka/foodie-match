@@ -120,13 +120,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "couple_id": string | null,"created_at": string,"display_name": string,"email": string,"id": string
+                    "couple_id": string | null,"created_at": string,"display_name": string,"email": string,"id": string,"onboarded": boolean
                   }
                   Insert: {
-                    "couple_id"?: string | null,"created_at"?: string,"display_name": string,"email": string,"id": string
+                    "couple_id"?: string | null,"created_at"?: string,"display_name": string,"email": string,"id": string,"onboarded"?: boolean
                   }
                   Update: {
-                    "couple_id"?: string | null,"created_at"?: string,"display_name"?: string,"email"?: string,"id"?: string
+                    "couple_id"?: string | null,"created_at"?: string,"display_name"?: string,"email"?: string,"id"?: string,"onboarded"?: boolean
                   }
                   Relationships: [
                     {

@@ -20,6 +20,13 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Single-parent ingredient hierarchy** (`ingredients.parent_id`): bacon → pork → meat, butter → dairy. Only explicit exclusions are stored; descendants are expanded at filter time. Vegetarian preset = `meat` + `seafood`.
 - **2026-09-26 — Synonyms/categories/parents in `data/ingredient-map.json`** so the mapping is reviewable in one place.
 
+## Exclusions
+- **2026-09-26 — First-run step = `profiles.onboarded` flag** (set by the client, column-level grant). Existing accounts see the step once too.
+- **2026-09-26 — Exclusions are direct client writes** (RLS: own rows only). Matches created by removing an exclusion come from a DB trigger, so the client still never writes match state.
+- **2026-09-26 — Presets only add/remove explicit exclusions.** A preset shows as on when all its ingredients are excluded, even via a parent (meat excluded ⇒ "No pork" on). Turning it off removes only its own explicit rows.
+- **2026-09-26 — Implied items (excluded via a parent) can't be toggled individually**; the row says "Included via pork". To eat bacon but not pork, exclude the specific pork items instead.
+- **2026-09-26 — The ingredient map is bundled in the app** (~30 KB) so search matches synonyms and plurals ("scallions" → spring onion).
+
 ## Pairing
 - **2026-09-26 — Pairing codes: 6 chars, no 0/O/1/I/L.** Readable when typed by hand.
 - **2026-09-26 — Pairing actions are SECURITY DEFINER RPCs.** Under RLS, B can't read A's code/invite rows directly.
@@ -54,5 +61,6 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Local Supabase: storage, edge functions and analytics disabled; sign-up rate limit raised** (tests create many users). Cloud settings are unaffected.
 - **2026-09-26 — Seed script runs on plain Node 24 type stripping** (no tsx/ts-node); `tsconfig` allows `.ts` import extensions so it type-checks with the app.
 - **2026-09-26 — A temporary recipe list screen** gives access to recipe details until Discover exists.
+- **2026-09-26 — `db:types` passes the local DB URL explicitly**: after `supabase link` the CLI reads `SUPABASE_DB_PASSWORD` from `.env` and would try the cloud password on the local DB.
 - **2026-09-26 — Cloud schema is deployed with `npm run db:push`** (Supabase CLI + access token + DB password in `.env`), not by pasting SQL.
 - **2026-09-26 — Private GitHub repo `martinvrbka/foodie-match`**; push after every phase.

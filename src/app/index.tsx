@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../components/Button';
@@ -13,6 +13,11 @@ export default function Home() {
   const { session } = useAuth();
   const { me, partner, loading, error, reload } = useMyProfile(session!.user.id);
   const [signOutError, setSignOutError] = useState<string | null>(null);
+
+  // First run: ask what they don't eat before anything else.
+  useEffect(() => {
+    if (me && !me.onboarded) router.replace({ pathname: '/exclusions', params: { onboarding: '1' } });
+  }, [me]);
 
   if (loading) {
     return (
@@ -39,7 +44,8 @@ export default function Home() {
             </Text>
           </>
         )}
-        <Button label={t('recipes.browse')} onPress={() => router.push('/recipes')} />
+        <Button label={t('exclusions.title')} onPress={() => router.push('/exclusions')} />
+        <Button label={t('recipes.browse')} variant="text" onPress={() => router.push('/recipes')} />
         {signOutError ? <Text style={styles.body}>{signOutError}</Text> : null}
         <Button
           label={t('auth.signOut')}

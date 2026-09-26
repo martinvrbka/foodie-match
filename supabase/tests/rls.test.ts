@@ -73,6 +73,28 @@ describe('signed in', () => {
     expect((await ok(a.client.from('couples').select('id'))).data).toEqual([{ id: await coupleOf(a) }]);
   });
 
+  it('can add and remove own exclusions and mark themselves onboarded', async () => {
+    const a = await signUp('a');
+    const garlic = await ingredient('garlic');
+    // Same call as src/data/exclusions.ts; saving twice is harmless.
+    for (let i = 0; i < 2; i++) {
+      await ok(
+        a.client
+          .from('user_excluded_ingredients')
+          .upsert([{ ingredient_id: garlic }], { onConflict: 'user_id,ingredient_id', ignoreDuplicates: true }),
+      );
+    }
+    expect((await ok(a.client.from('user_excluded_ingredients').select('ingredient_id'))).data).toEqual([
+      { ingredient_id: garlic },
+    ]);
+    await ok(a.client.from('user_excluded_ingredients').delete().in('ingredient_id', [garlic]));
+    expect((await ok(a.client.from('user_excluded_ingredients').select('ingredient_id'))).data).toEqual([]);
+
+    expect((await ok(a.client.from('profiles').select('onboarded').single())).data).toEqual({ onboarded: false });
+    await ok(a.client.from('profiles').update({ onboarded: true }).eq('id', a.id));
+    expect((await ok(a.client.from('profiles').select('onboarded').single())).data).toEqual({ onboarded: true });
+  });
+
   it("cannot add or remove someone else's exclusions", async () => {
     const [a, b] = [await signUp('a'), await signUp('b')];
     await pair(a, b);

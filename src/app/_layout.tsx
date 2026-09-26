@@ -22,6 +22,7 @@ function Routes() {
       </Stack.Protected>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="exclusions" />
         <Stack.Screen name="recipes" />
         <Stack.Screen name="recipe/[id]" />
       </Stack.Protected>

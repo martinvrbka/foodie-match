@@ -49,3 +49,9 @@ export function useMyProfile(userId: string): MyProfile {
 
   return { ...state, reload: load };
 }
+
+/** Marks the first-run "What don't you eat?" step as done. */
+export async function setOnboarded(userId: string) {
+  const { error } = await supabase.from('profiles').update({ onboarded: true }).eq('id', userId);
+  if (error) throw error;
+}
