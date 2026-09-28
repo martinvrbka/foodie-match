@@ -1,6 +1,8 @@
 import { expandExclusions } from '../logic/match';
 import type { DeckInput, DeckRecipe } from '../logic/deck';
+import { blockedForMatching } from '../logic/filters';
 import { cachedIngredients } from './exclusions';
+import { loadMySettings, loadPartnerBlocked, toFilterable } from './filters';
 import { listRecipes, type RecipeSummary } from './recipes';
 import { supabase } from './supabase';
 
@@ -61,14 +63,18 @@ export interface DiscoverData {
   recipes: Map<number, RecipeSummary>;
   deckInput: Omit<DeckInput, 'rng'>;
   partnerName: string | null;
+  /** Some recipes I haven't swiped are held back by my or my partner's filters/marks. */
+  filtersHoldBack: boolean;
 }
 
 /** Everything buildDeck needs, loaded fresh except for the static recipe data. */
 export async function loadDiscover(userId: string): Promise<DiscoverData> {
-  const [recipes, recipeIngredients, ingredients, profiles, exclusions, swipes] = await Promise.all([
+  const [recipes, recipeIngredients, ingredients, settings, partnerBlocked, profiles, exclusions, swipes] = await Promise.all([
     cachedRecipes(),
     cachedRecipeIngredients(),
     cachedIngredients(),
+    loadMySettings(),
+    loadPartnerBlocked(),
     // RLS: me, plus my partner when paired.
     supabase.from('profiles').select('id, display_name'),
     supabase.from('user_excluded_ingredients').select('user_id, ingredient_id'),
@@ -85,13 +91,18 @@ export async function loadDiscover(userId: string): Promise<DiscoverData> {
     ingredientIds: recipeIngredients.get(r.id) ?? [],
   }));
 
+  const mySwiped = new Set(swipes.data!.filter((s) => s.user_id === userId).map((s) => s.recipe_id));
+  const blocked = blockedForMatching(recipes.map(toFilterable), settings.filters, settings.hidden, partnerBlocked);
+
   return {
     recipes: new Map(recipes.map((r) => [r.id, r])),
     partnerName: partner?.display_name ?? null,
+    filtersHoldBack: [...blocked].some((id) => !mySwiped.has(id)),
     deckInput: {
       recipes: deckRecipes,
       myExcluded: expandExclusions(explicitOf(userId), nodes),
-      mySwiped: new Set(swipes.data!.filter((s) => s.user_id === userId).map((s) => s.recipe_id)),
+      mySwiped,
+      blocked,
       partner: partner
         ? {
             excluded: expandExclusions(explicitOf(partner.id), nodes),

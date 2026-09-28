@@ -8,6 +8,7 @@ import { RecipeMeta } from '../../components/RecipeMeta';
 import { useAuth } from '../../data/auth';
 import { errorText } from '../../data/errors';
 import { useExclusionStates } from '../../data/exclusions';
+import { useRecipeSettings } from '../../data/filters';
 import { isVisibleMatch, removeMatch } from '../../data/matches';
 import { useProfile } from '../../data/profile';
 import { getRecipe, photoUrl, type RecipeDetail } from '../../data/recipes';
@@ -24,6 +25,8 @@ export default function Recipe() {
   const ex = useExclusionStates(session!.user.id, partner?.id ?? null);
   const [recipe, setRecipe] = useState<RecipeDetail | null | undefined>(undefined);
   const [error, setError] = useState<unknown>(null);
+  const mySettings = useRecipeSettings();
+  const hidden = mySettings.settings?.hidden.has(Number(id)) ?? false;
 
   const [matched, setMatched] = useState(false);
   const [removeError, setRemoveError] = useState<unknown>(null);
@@ -91,6 +94,21 @@ export default function Recipe() {
         <View style={styles.content}>
           <Text style={styles.title}>{recipe.title}</Text>
           <RecipeMeta recipe={recipe} />
+          {mySettings.settings ? (
+            <View style={styles.doNotEatRow}>
+              {hidden ? <Text style={styles.partnerNote}>{t('filters.markedHere')}</Text> : null}
+              <Button
+                label={hidden ? t('filters.unmark') : t('filters.doNotEat')}
+                variant="text"
+                onPress={() => mySettings.setHidden(recipe.id, !hidden)}
+              />
+              {mySettings.saveError ? (
+                <Text style={styles.excludedNote}>
+                  {t('filters.saveFailed', { message: errorText(mySettings.saveError) })}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
           {blocked ? (
             <View style={styles.warning} accessibilityRole="alert">
               <Text style={styles.warningText}>{t('recipes.containsExcluded')}</Text>
@@ -214,6 +232,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   removeRow: { alignItems: 'flex-start', marginTop: spacing.sm },
+  doNotEatRow: { alignItems: 'flex-start' },
   partnerBadge: {
     alignSelf: 'flex-start',
     marginTop: spacing.sm,

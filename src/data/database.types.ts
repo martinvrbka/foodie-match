@@ -189,13 +189,13 @@ isOneToOne: false
                   ]
                 },"recipes": {
                   Row: {
-                    "category": string | null,"cook_time_estimated": boolean,"cook_time_min": number | null,"created_at": string,"cuisine": string | null,"id": number,"image_url": string | null,"instructions": (string)[],"source": string,"source_id": string,"title": string
+                    "category": string | null,"cook_time_estimated": boolean,"cook_time_min": number | null,"created_at": string,"cuisine": string | null,"difficulty": string | null,"id": number,"image_url": string | null,"instructions": (string)[],"source": string,"source_id": string,"title": string
                   }
                   Insert: {
-                    "category"?: string | null,"cook_time_estimated"?: boolean,"cook_time_min"?: number | null,"created_at"?: string,"cuisine"?: string | null,"id"?: number,"image_url"?: string | null,"instructions"?: (string)[],"source": string,"source_id": string,"title": string
+                    "category"?: string | null,"cook_time_estimated"?: boolean,"cook_time_min"?: number | null,"created_at"?: string,"cuisine"?: string | null,"difficulty"?: string | null,"id"?: number,"image_url"?: string | null,"instructions"?: (string)[],"source": string,"source_id": string,"title": string
                   }
                   Update: {
-                    "category"?: string | null,"cook_time_estimated"?: boolean,"cook_time_min"?: number | null,"created_at"?: string,"cuisine"?: string | null,"id"?: number,"image_url"?: string | null,"instructions"?: (string)[],"source"?: string,"source_id"?: string,"title"?: string
+                    "category"?: string | null,"cook_time_estimated"?: boolean,"cook_time_min"?: number | null,"created_at"?: string,"cuisine"?: string | null,"difficulty"?: string | null,"id"?: number,"image_url"?: string | null,"instructions"?: (string)[],"source"?: string,"source_id"?: string,"title"?: string
                   }
                   Relationships: [
                     
@@ -339,6 +339,50 @@ isOneToOne: false
       foreignKeyName: "user_excluded_ingredients_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"user_hidden_recipes": {
+                  Row: {
+                    "created_at": string,"recipe_id": number,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"recipe_id": number,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"recipe_id"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_hidden_recipes_recipe_id_fkey"
+      columns: ["recipe_id"]
+isOneToOne: false
+      referencedRelation: "recipes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "user_hidden_recipes_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"user_recipe_filters": {
+                  Row: {
+                    "cuisines": (string)[],"difficulties": (string)[],"max_minutes": number | null,"updated_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "cuisines"?: (string)[],"difficulties"?: (string)[],"max_minutes"?: number | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "cuisines"?: (string)[],"difficulties"?: (string)[],"max_minutes"?: number | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_recipe_filters_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
@@ -511,6 +555,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "from_name": string,"invite_id": string,"sent_at": string
             }[]
+                           },
+"partner_blocked_recipes":
+{ Args: Record<PropertyKey, never>; Returns: number[]
                            },
 "plan_accept":
 { Args: { "p_plan": string }; Returns: undefined

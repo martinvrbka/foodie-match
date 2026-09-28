@@ -14,6 +14,8 @@ export interface DeckInput {
   myExcluded: ReadonlySet<IngredientId>;
   /** Recipes I already swiped in discover (liked or not). */
   mySwiped: ReadonlySet<RecipeId>;
+  /** Recipes blocked by my or my partner's filters and "Do not eat" marks (blockedForMatching). */
+  blocked?: ReadonlySet<RecipeId>;
   /** Null when unpaired: no partner badge and no partner-based ordering. */
   partner: {
     /** Partner's exclusions, already expanded. */
@@ -44,12 +46,14 @@ function shuffle<T>(items: T[], rng: () => number): T[] {
 }
 
 /**
- * Filters by MY exclusions only, drops what I already swiped, mixes in recipes my
- * partner liked (about every 3rd card, so matches come early) and puts recipes my
- * partner can't eat at the very end, flagged.
+ * Filters by MY exclusions only, drops what I already swiped and what either
+ * partner's filters block, mixes in recipes my partner liked (about every 3rd card,
+ * so matches come early) and puts recipes my partner can't eat at the very end, flagged.
  */
-export function buildDeck({ recipes, myExcluded, mySwiped, partner, rng }: DeckInput): DeckCard[] {
-  const candidates = recipes.filter((r) => !mySwiped.has(r.id) && isCompatible(r.ingredientIds, myExcluded));
+export function buildDeck({ recipes, myExcluded, mySwiped, blocked, partner, rng }: DeckInput): DeckCard[] {
+  const candidates = recipes.filter(
+    (r) => !mySwiped.has(r.id) && !blocked?.has(r.id) && isCompatible(r.ingredientIds, myExcluded),
+  );
   if (partner === null) {
     return shuffle(candidates, rng).map((r) => ({ recipeId: r.id, partnerExcluded: false }));
   }

@@ -1,4 +1,4 @@
-import { formatIngredientLine } from '../logic/recipes';
+import { type Difficulty, formatIngredientLine } from '../logic/recipes';
 import { supabase } from './supabase';
 
 export interface RecipeSummary {
@@ -9,6 +9,8 @@ export interface RecipeSummary {
   cook_time_estimated: boolean;
   cuisine: string | null;
   category: string | null;
+  /** Estimated by the seed script; null for recipes from other sources. */
+  difficulty: Difficulty | null;
 }
 
 export interface IngredientLine {
@@ -24,8 +26,11 @@ export interface RecipeDetail extends RecipeSummary {
   ingredients: IngredientLine[];
 }
 
-const SUMMARY = 'id, title, image_url, cook_time_min, cook_time_estimated, cuisine, category';
+const SUMMARY = 'id, title, image_url, cook_time_min, cook_time_estimated, cuisine, category, difficulty';
 const PAGE = 1000; // PostgREST's default max rows per request
+
+/** The column is checked by the database to hold only these values. */
+const withDifficulty = <T extends { difficulty: string | null }>(r: T) => ({ ...r, difficulty: r.difficulty as Difficulty | null });
 
 /** All recipes, alphabetically. */
 export async function listRecipes(): Promise<RecipeSummary[]> {
@@ -37,7 +42,7 @@ export async function listRecipes(): Promise<RecipeSummary[]> {
       .order('title')
       .range(from, from + PAGE - 1);
     if (error) throw error;
-    out.push(...data);
+    out.push(...data.map(withDifficulty));
     if (data.length < PAGE) return out;
   }
 }
@@ -52,7 +57,7 @@ export async function getRecipe(id: number): Promise<RecipeDetail | null> {
   if (!data) return null;
   const { recipe_ingredients, ...recipe } = data;
   return {
-    ...recipe,
+    ...withDifficulty(recipe),
     ingredients: [...recipe_ingredients]
       .sort((a, b) => a.position - b.position)
       .map((i) => ({

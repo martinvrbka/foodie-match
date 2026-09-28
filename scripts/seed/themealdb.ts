@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../src/data/database.types.ts';
 import { ingredientTable, normalizeIngredient, type IngredientMap } from '../../src/logic/ingredients.ts';
-import { estimateCookTime, splitInstructions } from '../../src/logic/recipes.ts';
+import { estimateCookTime, estimateDifficulty, splitInstructions } from '../../src/logic/recipes.ts';
 
 const API = 'https://www.themealdb.com/api/json/v1/1';
 const BATCH = 200;
@@ -139,17 +139,22 @@ async function main() {
       await db
         .from('recipes')
         .upsert(
-          batch.map(({ meal, lines }) => ({
-            source: 'themealdb',
-            source_id: meal.idMeal,
-            title: meal.strMeal.trim(),
-            image_url: meal.strMealThumb,
-            cuisine: meal.strArea ?? meal.strCountry ?? null,
-            category: meal.strCategory,
-            instructions: splitInstructions(meal.strInstructions ?? ''),
-            cook_time_min: estimateCookTime(meal.strInstructions ?? '', lines.length),
-            cook_time_estimated: true,
-          })),
+          batch.map(({ meal, lines }) => {
+            const instructions = splitInstructions(meal.strInstructions ?? '');
+            const cookTime = estimateCookTime(meal.strInstructions ?? '', lines.length);
+            return {
+              source: 'themealdb',
+              source_id: meal.idMeal,
+              title: meal.strMeal.trim(),
+              image_url: meal.strMealThumb,
+              cuisine: meal.strArea ?? meal.strCountry ?? null,
+              category: meal.strCategory,
+              instructions,
+              cook_time_min: cookTime,
+              cook_time_estimated: true,
+              difficulty: estimateDifficulty(lines.length, instructions.length, cookTime),
+            };
+          }),
           { onConflict: 'source,source_id' },
         )
         .select('id, source_id'),

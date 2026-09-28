@@ -21,10 +21,17 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 ## Recipe text (`recipes.ts`)
 - `splitInstructions`: one step per line, "STEP n" labels and "n." numbering removed; a single paragraph over 400 chars is split into sentences.
 - `estimateCookTime`: 5 + 1.5 min per ingredient + every mentioned duration (upper bound of ranges, each capped at 240), rounded to 5, clamped 10–300.
+- `estimateDifficulty`: 0–2 points each for ingredients (12+ / 16+), steps (7+ / 11+) and cook time (60+ / 120+ min); 0–1 = easy, 2–3 = medium, 4+ = hard.
+
+## Advanced filters (`filters.ts`)
+- `passesFilters`: max time, difficulties, cuisines, each checked on its own. No cook time fails any max time; no difficulty/cuisine passes that filter only.
+- `visibleInOverview`: my own filters and my "Do not eat" marks only.
+- `blockedForMatching`: fails my filters, or marked by me, or in the partner's blocked set (from the server). Mirrored in SQL `private.blocked_recipe_ids`: change both together.
+- `filterOptions`: only values recipes have; difficulty in easy → hard order, cuisines alphabetical. Max time uses the fixed `MAX_TIME_OPTIONS`.
 
 ## Deck (`buildDeck`)
 - Filter by **my own** expanded exclusions only; never drop a recipe because of the partner.
-- Remove recipes I already swiped in `discover`.
+- Remove recipes I already swiped in `discover`, and recipes in `blocked` (either partner's filters and "Do not eat" marks).
 - Recipes the partner can't eat (their expanded exclusions) go **after** all others and carry a partner-excluded flag.
 - Among recipes both can eat: partner-liked-but-unseen ones take every 3rd position (index 2, 5, 8…) while any remain; the rest is shuffled with the injected RNG.
 - Unpaired ⇒ no partner flag and no partner ordering.

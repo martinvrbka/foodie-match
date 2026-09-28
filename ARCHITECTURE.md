@@ -56,22 +56,23 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 
 - **People:** `profiles` (1:1 with `auth.users`, created by trigger), `couples` (max 2 members, enforced by trigger).
 - **Pairing:** `pairing_codes` (6 chars, 10 min, single use), `pairing_invites` (in-app, matched on normalized email).
-- **Food:** `recipes`, `recipe_ingredients` (name, measure, raw line), `ingredients` (canonical names, single-parent hierarchy), `user_excluded_ingredients` (explicit exclusions only; descendants are implied).
+- **Food:** `recipes` (with estimated `difficulty`), `recipe_ingredients` (name, measure, raw line), `ingredients` (canonical names, single-parent hierarchy), `user_excluded_ingredients` (explicit exclusions only; descendants are implied).
+- **Preferences:** `user_recipe_filters` (max time, difficulties, cuisines), `user_hidden_recipes` ("Do not eat"). Readable only by their owner.
 - **Activity:** `swipes` (`discover` or `tonight`), `matches` (`via` = `swipe` | `retroactive`, `removed_at`), view `visible_matches` (applies current exclusions at read time).
 - **Tonight:** `tonight_sessions` (stage, filters, shortlist, winner), `tonight_participants` (per-stage "done" flags, top picks), `tonight_rankings`.
 - **Week plan:** `week_plans` (one per couple and week; stage, this week's 30 picks, leftover setting), `week_plan_slots` (one row per switched-on slot: dish, lock, note, who changed it), `week_plan_members` (re-swipe done, last opened), `week_plan_swipes` (this week's re-swipe), `couple_no_leftovers`. Leftover pairs aren't stored; they're derived from the slots.
 
 ### Security model
 
-- **Reads:** RLS lets a user see their own rows plus their partner's (profile, exclusions, discover swipes, tonight swipes in shared sessions), and the couple's matches and sessions. Recipes and ingredients are readable by any signed-in user; nothing is readable signed out.
-- **Writes:** clients may write directly only their own `display_name`, `onboarded` flag and exclusions. Everything that changes membership, matches or Tonight state is a `SECURITY DEFINER` RPC in `public` that checks `auth.uid()`. Helpers live in the `private` schema, which the API doesn't expose.
+- **Reads:** RLS lets a user see their own rows plus their partner's (profile, exclusions, discover swipes, tonight swipes in shared sessions), and the couple's matches and sessions. Filters and "Do not eat" marks are own rows only; the partner's effect comes from `partner_blocked_recipes()` (recipe ids, no reasons). Recipes and ingredients are readable by any signed-in user; nothing is readable signed out.
+- **Writes:** clients may write directly only their own `display_name`, `onboarded` flag, exclusions, filters and "Do not eat" marks. Everything that changes membership, matches or Tonight state is a `SECURITY DEFINER` RPC in `public` that checks `auth.uid()`. Helpers live in the `private` schema, which the API doesn't expose.
 - **Errors:** RPCs raise short codes (`code_expired`, `tonight_wrong_stage`); `src/data/errors.ts` maps them to readable text.
 - **Secrets:** the app ships only the publishable key. The secret key, access token and DB password stay in `.env` for the seed and deploy scripts.
 
 ### Key flows
 
 - **Matching:** `discover_swipe` inserts a swipe; a trigger calls `private.is_match` (SQL twin of `isMatch()` in `src/logic/match.ts`) and inserts `matches` with `via = 'swipe'`. Removing an exclusion or pairing runs `refresh_matches`, which creates `via = 'retroactive'` matches. The match rule therefore exists twice, TS and SQL, and both must change together.
-- **Deck:** the phone loads all recipes (~800), all recipe→ingredient pairs (~8k rows, paged) and both partners' exclusions and swipes, then the pure `buildDeck()` decides the order. Static data is cached for the app session.
+- **Deck:** the phone loads all recipes (~800), all recipe→ingredient pairs (~8k rows, paged), both partners' exclusions and swipes, my filters and marks and the partner's blocked ids, then the pure `buildDeck()` decides the order. Static data is cached for the app session.
 - **Live updates:** one app-wide `ProfileProvider` subscribes to `profiles`; `MatchProvider` subscribes to new matches and shows "It's a match!" over any screen. Screens with live data (invites, match list, Tonight) open their own channels with unique names and simply reload on any change.
 - **Week plan:** `setup → choosing → generated → accepted`. The phone computes the selection (`pickSelection`), the plan (`generatePlan`) and every edit (`swapSlot`, `moveSlot`…) and saves only changed slots with `plan_write_slots`; the server validates couple, stage, dates and that dishes are shared matches. Realtime on plans/slots/members reloads both phones (debounced, since Generate writes many rows). Plans that are over are deleted on load.
 - **Tonight:** a small state machine (`swiping → choosing | shortlisting → ranking | ranking → done`). Each phone computes the next stage with `tonightAdvance()` once both partners have finished, and calls `tonight_advance`, which accepts only the first write for that stage. Both phones may try; exactly one wins.
@@ -86,7 +87,7 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 
 1. **Hand-written data hooks:** each loads, caches and subscribes in its own way. Several screens reload whole datasets on any realtime event.
 2. **The deck downloads the whole catalogue** on first open (~800 recipes + ~8k ingredient links). That's fine now, but it grows linearly.
-3. **The match rule is duplicated** in TS and SQL, guarded only by two separate test suites, not by a test that compares them.
+3. **The match rule and the filter rule are duplicated** in TS and SQL, guarded only by separate test suites, not by a test that compares them.
 4. **Session state lives in the phone's storage** (`expo-sqlite` localStorage): the Supabase session, "last seen matches" and the dismissed Tonight winner. There is no cross-device sync; that's acceptable for the use case.
 5. **Tonight RPCs are called through a loosely typed wrapper** (`src/data/tonight.ts`), unlike the rest of the data layer.
 6. **Navigation is a list of buttons on Home**, not tabs.

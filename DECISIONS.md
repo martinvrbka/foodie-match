@@ -85,6 +85,18 @@ Source: `final-prd.md` of grooming run 1 (2026-09-26). Where the PRD left a choi
 - **2026-09-26 — Added "Delete this plan"** (not in the PRD) to start a week over; confirmed, for both partners.
 - **2026-09-26 — Unpairing deletes the couple's plans and leftover marks**, like matches.
 
+## Advanced filters
+Source: `final-prd.md` of grooming run 1 for `advanced-recipe-filters` (2026-09-28). All six stories built.
+- **2026-09-28 — "Overview" = the recipe list; "matching" = Discover and the week plan's 30-dish selection.** Matches, Tonight and a generated plan are not filtered (US-03: already matched or planned stays). Filtering Tonight could come later.
+- **2026-09-28 — Difficulty is estimated by the seed** (`estimateDifficulty`: ingredients, steps, cook time). TheMealDB has none. Of 790 recipes: 416 easy, 280 medium, 94 hard.
+- **2026-09-28 — Cuisine = `recipes.cuisine`** (TheMealDB area, "Italian"), not a country name.
+- **2026-09-28 — DL-018 (open): Undo is shown for 5 seconds.** Afterwards only the "Do not eat" list brings a recipe back.
+- **2026-09-28 — DL-019 (open): a missing value passes only its own filter;** the other filters still apply.
+- **2026-09-28 — DL-015 privacy: filters and marks are own-rows-only (RLS)**, unlike exclusions. Matching needs the partner's effect, so `partner_blocked_recipes()` returns recipe ids only, never which filter or mark caused them. The rule exists twice: `blockedForMatching`/`passesFilters` (TS) and `private.blocked_recipe_ids` (SQL); change both together.
+- **2026-09-28 — Filters and marks are direct client writes** (own rows): they never change membership or match state.
+- **2026-09-28 — Marking "Do not eat" keeps the match**; the recipe just won't be in the list, Discover or the next week's selection.
+- **2026-09-28 — DL-014/016 (tech questions):** every seeded recipe has a cook time and difficulty; 190 have no cuisine. Swipes already record likes and nopes with timestamps (DoD-06); plans are deleted when their week ends, so plan completion (DoD-07) can't be measured without a new log. Not built.
+
 ## Tooling
 - **2026-09-26 — Expo SDK 57, routes in `src/app/`** (scaffold default).
 - **2026-09-26 — `react-dom` pinned to the React version**: an optional peer dep otherwise breaks `npx expo install`.

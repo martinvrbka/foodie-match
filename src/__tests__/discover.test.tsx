@@ -3,6 +3,7 @@
 import { render, screen, userEvent, waitFor } from '@testing-library/react-native';
 import Discover from '../app/discover';
 import { loadDiscover, swipe, undoLastSwipe, type DiscoverData } from '../data/discover';
+import { saveFilters } from '../data/filters';
 
 const mockCelebrate = jest.fn();
 
@@ -15,6 +16,7 @@ jest.mock('../data/supabase', () => ({ supabase: {} }));
 jest.mock('../data/matches', () => ({ useMatchCelebration: () => ({ celebrate: mockCelebrate }) }));
 jest.mock('../data/auth', () => ({ useAuth: () => ({ session: { user: { id: 'me' } } }) }));
 jest.mock('../data/exclusions', () => ({ exclusionsVersion: () => 0 }));
+jest.mock('../data/filters', () => ({ filtersVersion: () => 0, saveFilters: jest.fn(() => Promise.resolve()) }));
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   notificationAsync: jest.fn(() => Promise.resolve()),
@@ -54,6 +56,7 @@ const recipe = (id: number, title: string) => ({
   cook_time_estimated: true,
   cuisine: null,
   category: null,
+  difficulty: null,
 });
 
 function data(partner: DiscoverData['deckInput']['partner'] = null): DiscoverData {
@@ -63,6 +66,7 @@ function data(partner: DiscoverData['deckInput']['partner'] = null): DiscoverDat
       [2, recipe(2, 'Curry')],
     ]),
     partnerName: partner ? 'Anna' : null,
+    filtersHoldBack: false,
     deckInput: {
       recipes: [
         { id: 1, ingredientIds: [] },
@@ -155,4 +159,25 @@ it('shows the empty state when there is nothing left', async () => {
   jest.mocked(loadDiscover).mockResolvedValue({ ...data(), deckInput: { ...data().deckInput, mySwiped: new Set([1, 2]) } });
   await render(<Discover />);
   expect(await screen.findByText("You've seen every recipe")).toBeTruthy();
+});
+
+it('drops recipes blocked by either partner\'s filters or "Do not eat" marks', async () => {
+  jest.mocked(loadDiscover).mockResolvedValue({ ...data(), deckInput: { ...data().deckInput, blocked: new Set([1]) } });
+  await render(<Discover />);
+  expect(await screen.findByText(/^top: Curry/)).toBeTruthy();
+  expect(screen.queryByText(/Pasta/)).toBeNull();
+});
+
+it('when filters hold recipes back: says to ask the partner, and "Clear filters" clears only mine', async () => {
+  const partner = { excluded: new Set<number>(), liked: new Set<number>() };
+  const held: DiscoverData = { ...data(partner), filtersHoldBack: true };
+  held.deckInput = { ...held.deckInput, blocked: new Set([1, 2]) };
+  jest.mocked(loadDiscover).mockResolvedValue(held);
+  await render(<Discover />);
+  expect(await screen.findByText(/Your partner's filters may be limiting recipes, so ask your partner/)).toBeTruthy();
+  expect(screen.queryByText("You've seen every recipe")).toBeNull();
+
+  await userEvent.setup().press(screen.getByRole('button', { name: 'Clear filters' }));
+  expect(saveFilters).toHaveBeenCalledWith({ maxMinutes: null, difficulties: [], cuisines: [] });
+  await waitFor(() => expect(loadDiscover).toHaveBeenCalledTimes(2));
 });

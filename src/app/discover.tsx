@@ -9,10 +9,12 @@ import { useAuth } from '../data/auth';
 import { type DiscoverData, loadDiscover, swipe, undoLastSwipe } from '../data/discover';
 import { errorText } from '../data/errors';
 import { exclusionsVersion } from '../data/exclusions';
+import { filtersVersion, saveFilters } from '../data/filters';
 import { useMatchCelebration } from '../data/matches';
 import { useProfile } from '../data/profile';
 import { t } from '../i18n';
 import { buildDeck, type DeckCard } from '../logic/deck';
+import { NO_FILTERS } from '../logic/filters';
 import { colors, font, radius, spacing } from '../theme/tokens';
 
 interface LastSwipe {
@@ -34,25 +36,32 @@ export default function Discover() {
   const { me } = useProfile();
   const top = useRef<SwipeCardHandle>(null);
   const builtFor = useRef<string | null>(null);
-  // Rebuild when exclusions or the couple changed since the deck was built.
-  const buildKey = `${exclusionsVersion()}|${me?.couple_id ?? ''}`;
+  const coupleId = me?.couple_id ?? '';
+  // Rebuild when exclusions, my filters/marks or the couple changed since the deck was built.
+  // Read when needed, not per render: the versions change on other screens.
+  const deckKey = useCallback(() => `${exclusionsVersion()}|${filtersVersion()}|${coupleId}`, [coupleId]);
 
   const load = useCallback(() => {
     setLoadError(null);
-    const key = buildKey;
+    const key = deckKey();
     loadDiscover(userId).then((d) => {
       builtFor.current = key;
       setData(d);
       setDeck(buildDeck({ ...d.deckInput, rng: Math.random }));
       setLast(null);
     }, setLoadError);
-  }, [userId, buildKey]);
+  }, [userId, deckKey]);
+
+  const clearMyFilters = () => {
+    setActionError(null);
+    saveFilters(NO_FILTERS).then(load, (e) => setActionError(errorText(e)));
+  };
 
   // Build on first open, and rebuild when exclusions or pairing changed meanwhile.
   useFocusEffect(
     useCallback(() => {
-      if (builtFor.current !== buildKey) load();
-    }, [load, buildKey]),
+      if (builtFor.current !== deckKey()) load();
+    }, [load, deckKey]),
   );
 
   const onSwiped = (dir: SwipeDirection) => {
@@ -144,6 +153,14 @@ export default function Discover() {
               onOpen={() => openRecipe(current.recipeId)}
             />
           </>
+        ) : data.filtersHoldBack ? (
+          <View style={[styles.center, styles.empty]}>
+            <Text style={styles.body}>
+              {data.deckInput.partner ? t('filters.emptyMatching') : t('filters.emptyMatchingSolo')}
+            </Text>
+            <Button label={t('filters.clear')} onPress={clearMyFilters} />
+            <Button label={t('recipes.browse')} variant="text" onPress={() => router.push('/recipes')} />
+          </View>
         ) : (
           <View style={[styles.center, styles.empty]}>
             <Text style={styles.emptyTitle}>{t('discover.emptyTitle')}</Text>

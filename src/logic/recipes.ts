@@ -39,6 +39,19 @@ export function estimateCookTime(instructions: string, ingredientCount: number):
   return Math.min(300, Math.max(10, total));
 }
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+/**
+ * Difficulty estimated from how much work a recipe is: 0–2 points each for many
+ * ingredients (12+ / 16+), many steps (7+ / 11+) and a long cook time (60+ / 120+ min).
+ * 0–1 points = easy, 2–3 = medium, 4+ = hard. TheMealDB has no difficulty of its own.
+ */
+export function estimateDifficulty(ingredientCount: number, stepCount: number, cookTimeMin: number): Difficulty {
+  const points = (value: number, one: number, two: number) => (value >= two ? 2 : value >= one ? 1 : 0);
+  const score = points(ingredientCount, 12, 16) + points(stepCount, 7, 11) + points(cookTimeMin, 60, 120);
+  return score <= 1 ? 'easy' : score <= 3 ? 'medium' : 'hard';
+}
+
 const tidy = (s: string) => s.replace(/\s+/g, ' ').trim();
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 

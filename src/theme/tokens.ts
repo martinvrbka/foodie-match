@@ -32,6 +32,9 @@ export const colors = {
   border: palette.sand,
   overlay: palette.black, // photo gradients (used with opacity)
   onPhoto: palette.white,
+  toast: palette.espresso, // short confirmation bar ("Hidden… Undo")
+  onToast: palette.cream,
+  toastAction: palette.mustard,
 } as const;
 
 /**
@@ -51,6 +54,8 @@ export const textPairs: { fg: string; bg: string; large?: boolean; name: string 
   { name: 'text on secondary', fg: colors.onSecondary, bg: colors.secondary },
   { name: 'text on accent', fg: colors.onAccent, bg: colors.accent },
   { name: 'text on success', fg: colors.onSuccess, bg: colors.success },
+  { name: 'toast text', fg: colors.onToast, bg: colors.toast },
+  { name: 'toast action', fg: colors.toastAction, bg: colors.toast },
   { name: 'white on photo gradient (black 70%)', fg: colors.onPhoto, bg: '#4D4D4D' },
 ];
 

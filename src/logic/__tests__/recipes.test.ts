@@ -1,4 +1,4 @@
-import { estimateCookTime, formatIngredientLine, splitInstructions } from '../recipes';
+import { estimateCookTime, estimateDifficulty, formatIngredientLine, splitInstructions } from '../recipes';
 
 describe('splitInstructions', () => {
   it('splits on lines and drops empty ones', () => {
@@ -77,5 +77,28 @@ describe('formatIngredientLine', () => {
 
   it('allows an empty measure', () => {
     expect(formatIngredientLine('Salt', '  ')).toEqual({ name: 'Salt', detail: '' });
+  });
+});
+
+describe('estimateDifficulty', () => {
+  it('few ingredients, few steps, quick ⇒ easy', () => {
+    expect(estimateDifficulty(6, 3, 20)).toBe('easy');
+    expect(estimateDifficulty(12, 3, 20)).toBe('easy'); // one point is still easy
+  });
+
+  it('2–3 points ⇒ medium', () => {
+    expect(estimateDifficulty(12, 7, 20)).toBe('medium');
+    expect(estimateDifficulty(16, 4, 60)).toBe('medium');
+  });
+
+  it('4+ points ⇒ hard', () => {
+    expect(estimateDifficulty(16, 11, 30)).toBe('hard');
+    expect(estimateDifficulty(10, 7, 120)).toBe('medium');
+    expect(estimateDifficulty(12, 7, 120)).toBe('hard');
+  });
+
+  it('thresholds are inclusive', () => {
+    expect(estimateDifficulty(11, 6, 59)).toBe('easy');
+    expect(estimateDifficulty(16, 11, 120)).toBe('hard');
   });
 });

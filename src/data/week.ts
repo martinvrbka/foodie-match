@@ -20,6 +20,7 @@ import {
   type PlanStatus,
   weekCandidates,
 } from '../logic/week';
+import { loadCoupleBlocked } from './filters';
 import type { MatchRow } from './matches';
 import { useProfile } from './profile';
 import { supabase } from './supabase';
@@ -208,11 +209,13 @@ export function useWeek() {
         call(supabase.rpc('plan_set_leftovers', { p_plan: planId, p_leftovers: n })),
       ),
       /** Picks this week's selection (first phone wins) and starts the re-swipe. */
-      beginChoosing: after((plan: WeekPlan, slots: Slot[], matches: MatchRow[]) => {
+      beginChoosing: after(async (plan: WeekPlan, slots: Slot[], matches: MatchRow[]) => {
         const perGroup: Partial<Record<MealGroup, number>> = {};
         for (const s of slots) perGroup[groupOf(s.meal)] = (perGroup[groupOf(s.meal)] ?? 0) + 1;
+        // Matches either partner's filters or "Do not eat" marks now block aren't offered this week.
+        const blocked = await loadCoupleBlocked();
         const picks = pickSelection(
-          matches.map((m) => ({ id: m.recipe.id, category: m.recipe.category })),
+          matches.filter((m) => !blocked.has(m.recipe.id)).map((m) => ({ id: m.recipe.id, category: m.recipe.category })),
           perGroup,
           Math.random,
         );

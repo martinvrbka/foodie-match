@@ -31,7 +31,7 @@ Personal MVP for 2 users. Optimize for working end-to-end and feeling good to us
 - `pairing_invites` (id, from_user_id, to_email, status `pending` | `accepted` | `declined`, created_at): email-based pairing, delivered in-app (no email sent)
 - `ingredients` (id, canonical_name, category, parent_id): normalized, e.g. `garlic`, `pork`, `mushroom`
 - `user_excluded_ingredients` (user_id, ingredient_id)
-- `recipes` (id, title, image_url, cook_time_min, cook_time_estimated, cuisine, category, instructions, source, source_id)
+- `recipes` (id, title, image_url, cook_time_min, cook_time_estimated, cuisine, category, difficulty `easy` | `medium` | `hard` (estimated), instructions, source, source_id)
 - `recipe_ingredients` (id, recipe_id, ingredient_id, raw_text): raw_text keeps the original line ("2 cloves garlic, minced")
 - `swipes` (user_id, recipe_id, context `discover` | `tonight`, session_id nullable, liked bool, created_at), unique per (user, recipe, context, session)
 - `matches` (couple_id, recipe_id, created_at, removed_at): created when both partners liked the recipe in `discover`
@@ -42,6 +42,7 @@ Personal MVP for 2 users. Optimize for working end-to-end and feeling good to us
 - `week_plan_slots` (plan_id, day, meal `breakfast` | `lunch` | `snack` | `dinner`, recipe_id, locked, note, changed_by, changed_at): a row per switched-on slot
 - `week_plan_members` (plan_id, user_id, reswipe_done, seen_at), `week_plan_swipes` (plan_id, user_id, recipe_id, liked)
 - `couple_no_leftovers` (couple_id, recipe_id): "Not good for leftovers"
+- `user_recipe_filters` (user_id, max_minutes, difficulties, cuisines), `user_hidden_recipes` (user_id, recipe_id): "Do not eat" marks. Private to their owner.
 
 RLS: users may only read and write data belonging to themselves or their couple.
 
@@ -108,7 +109,17 @@ Source: grooming package `foodie-match-couple-meal-plan/run-1_2026-09-26/final-p
 - **Accept (US-07):** either partner alone ("Use this plan" → "Accepted by [name]"). A generated plan not accepted becomes active on its first day ("This plan started without being accepted"); one never generated is deleted then. A plan is deleted when its week ends: no history, no eaten-tracking.
 - **Tonight (US-08):** with tonight's dinner planned, "What do we eat tonight?" first shows it with "Eat this" / "Choose something else"; the round's winner replaces tonight's dinner (and its leftover is removed).
 
-### 8. Visual design
+### 8. Advanced filters and "Do not eat"
+Source: grooming package `advanced-recipe-filters/run-1_2026-09-28/final-prd.md` (US-01 to US-06, all built).
+- **Filters (US-01):** "Advanced filters" on the recipe list opens a panel labelled "Also applies to weekly matching": max preparation time (Any / 15 / 30 / 45 / 60 / 90 / 120 min), difficulty (Easy / Medium / Hard, several) and cuisine (only cuisines recipes have, several). The button shows the count, "Advanced filters (2)". "Clear filters" resets all three, not "Do not eat" marks.
+- **Rules:** a recipe with no cook time is hidden by any max time; one with no difficulty or cuisine passes that filter (others still apply).
+- **Kept (US-02)** in the database: the same on every device, and they keep shaping the partner's matching while I'm away.
+- **"Do not eat" (US-03):** on each recipe in the list and on the recipe screen. The recipe disappears, "Hidden: you won't see this recipe again" offers Undo for 5 seconds. Existing matches and planned dishes stay.
+- **"Do not eat" list (US-04):** my marks with "Show again". Partners never see or change each other's filters or marks.
+- **Where they apply:** the recipe list uses only my own settings. Discover and the week plan's re-swipe selection offer only recipes that pass **both** partners' filters and neither marked. Already-dealt cards aren't withdrawn.
+- **Empty states (US-06):** list: "No recipes match your filters" + Clear filters. Discover: "No more recipes match your and your partner's filters. Your partner's filters may be limiting recipes, so ask your partner." + Clear filters (mine only).
+
+### 9. Visual design
 Warm, appetite-associated colors as theme tokens (no hardcoded colors in components):
 - Primary (tomato red) `#E4572E`: like actions, icons, large bold text. CTA buttons with normal-size labels use `primaryStrong` `#C8431F` (AA).
 - Secondary (saffron) `#F29E4C`; Accent (mustard) `#F6C85F` for highlights and match celebration; Fresh (herb green) `#6A994E` for success/match confirmations only.

@@ -1,6 +1,6 @@
 # Foodie Match
 
-Tinder-style recipe picker for a couple (2 users). Each partner sets ingredients they don't eat, the phones pair via QR or in-app email invite, both swipe recipes, and mutual likes become Matches. "Tonight" mode runs a quick swipe + Borda ranking round on the matches to pick one dish. The weekly plan fills a Mon–Sun calendar from re-swiped matches, with planned leftovers and a prep schedule.
+Tinder-style recipe picker for a couple (2 users). Each partner sets ingredients they don't eat (plus private recipe filters and "Do not eat" marks), the phones pair via QR or in-app email invite, both swipe recipes, and mutual likes become Matches. "Tonight" mode runs a quick swipe + Borda ranking round on the matches to pick one dish. The weekly plan fills a Mon–Sun calendar from re-swiped matches, with planned leftovers and a prep schedule.
 
 - **Read `SPEC.md`** for product requirements (source of truth).
 - **Read `DECISIONS.md` before changing any business rule** (filtering, matching, pairing, Tonight, week plan).
@@ -35,7 +35,7 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 
 ## Folder map
 - `src/app/` — Expo Router screens only; thin, no business logic.
-- `src/logic/` — pure business logic (normalize, deck, match, Borda, Tonight outcome, week plan: dates, selection, Generate, edits, leftovers) + tests. See its CLAUDE.md.
+- `src/logic/` — pure business logic (normalize, deck, match, recipe filters, Borda, Tonight outcome, week plan: dates, selection, Generate, edits, leftovers) + tests. See its CLAUDE.md.
 - `src/theme/` — color/spacing tokens and WCAG contrast checker.
 - `src/i18n/` — all UI strings (`en.ts`) and `t()`.
 - `src/data/` — Supabase client, auth, queries, realtime hooks, error → string mapping, generated DB types.
@@ -54,7 +54,7 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 - Anything that changes couple membership or match state goes through a Supabase RPC, never a direct client table write.
 - SQL changes = new migration file; never edit an applied migration. Supabase grants anon/authenticated full access to new `public` tables by default: every new table needs RLS enabled and explicit `revoke`/`grant` like `*_rules.sql`.
 - RPCs raise errors as a short code in the message (`raise exception 'code_used'`); map new codes to strings in `src/data/errors.ts`.
-- If the SQL match function changes, update `isMatch()` in `src/logic/` too (and vice versa).
+- If the SQL match function changes, update `isMatch()` in `src/logic/` too (and vice versa). Same for `private.blocked_recipe_ids` and `blockedForMatching()`.
 - Record assumptions in `DECISIONS.md` rather than guessing silently.
 
 ## Testing rules

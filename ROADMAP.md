@@ -1,6 +1,6 @@
 # Roadmap and progress
 
-Last updated 2026-09-26. Keep this short: move finished items to "Done" and delete what no longer applies.
+Last updated 2026-09-28. Keep this short: move finished items to "Done" and delete what no longer applies.
 
 ## Done
 
@@ -14,7 +14,8 @@ Last updated 2026-09-26. Keep this short: move finished items to "Done" and dele
 | 5 | Pairing by QR, code and email invite; "It's a match!" live on both phones | `1329441` |
 | 6 | Matches screen: grid, cook-time/cuisine filters, remove, "N new!" | `ca12347` |
 | 7 | Tonight mode: swipe round, top 5, ranking, Borda winner, cooked history | `03fa8f5` |
-| 7b | Weekly meal plan (PRD run 1: US-01, 02, 04–08): re-swipe, Generate with leftovers, prep schedule, edits, accept, Tonight uses the plan | "Week plan" commit |
+| 7b | Weekly meal plan (PRD run 1: US-01, 02, 04–08): re-swipe, Generate with leftovers, prep schedule, edits, accept, Tonight uses the plan | `c85b70b` |
+| 7c | Advanced filters (PRD `advanced-recipe-filters` run 1, US-01–06): max time / difficulty / cuisine, "Do not eat" with list, both partners' settings in Discover and the week selection | "Advanced filters" commit |
 
 Tested on two real phones: sign-up, exclusions, pairing (QR and email), Discover, live matches on both phones.
 
@@ -42,6 +43,16 @@ Tested on two real phones: sign-up, exclusions, pairing (QR and email), Discover
 10. If tonight has a planned dinner: **What do we eat tonight?** first shows it with **Eat this** / **Choose something else**.
 11. **Delete this plan** (bottom of the plan) resets everything, so you can try **Plan next week** too.
 
+**Advanced filters** (Phase 7c), about 10 minutes, no long swiping.
+1. A: Home → **Browse recipes** → **Advanced filters**. The panel says "Also applies to weekly matching". Tap **30 min**: long recipes disappear and the button reads **Advanced filters (1)**. Tap **Easy** and **Italian**: **(3)**. Every recipe row now shows its difficulty.
+2. A: **Clear filters**: everything is back.
+3. A: tap **Do not eat** on any recipe. It disappears and "Hidden: you won't see this recipe again" shows **Undo** for 5 seconds. Try Undo once, then mark it again and let the message go.
+4. A: **Do not eat list (1)** shows it; **Show again** puts it back in the list. Mark it once more.
+5. B: open **Browse recipes**: B still sees A's recipe and none of A's filters, and B's **Do not eat list** is empty.
+6. A: set **Cuisine → one small cuisine** (e.g. Jamaican). B: open **Discover**: B only gets that cuisine now (and never A's "Do not eat" recipe). Swipe a few; when they run out B sees "…Your partner's filters may be limiting recipes, so ask your partner." B's **Clear filters** doesn't change that (it's A's filter). A clears it; B reopens Discover and gets all recipes again.
+7. A: sign in on another phone (or sign out and back in): the filters and the list are still there.
+8. Optional, week plan: with A's max time set to 15 min, start a new plan: longer matches aren't among the dishes to choose.
+
 ## Next: Phase 8, installable APK
 
 Goal: a sideloadable APK built on the computer, so the app works without Expo Go or the dev server.
@@ -56,6 +67,10 @@ Goal: a sideloadable APK built on the computer, so the app works without Expo Go
 
 From you:
 - **Browse filters by exclusions** (e.g. "only recipes we can both eat") in the recipe list, after swiping has settled. Today the list is deliberately unfiltered.
+
+Advanced filters, open from the PRD (grooming run 1):
+- PO to confirm DL-018 (Undo time; 5 s used) and DL-019 (missing value passes only its own filter). "Later" list: more filter types, presets, filters inside matching, reminder when filters narrow matching.
+- Measuring success (DoD-06–08): nope-share can be computed from `swipes`; plan completion needs a small log because plans are deleted after their week.
 
 Week plan, still open from the PRD (grooming run 1):
 - **US-03 shared top-up deck** ("Swipe to add more" for short meal types: our older matches first, then up to 20 new dishes). Today a short type links to Discover.

@@ -84,6 +84,17 @@ describe('buildDeck', () => {
     expect(deck[deck.length - 1]).toEqual({ recipeId: 12, partnerExcluded: true });
   });
 
+  it('drops recipes blocked by either partner’s filters or "Do not eat" marks, even partner-liked ones', () => {
+    const deck = buildDeck(
+      input({ blocked: new Set([10, 12]), partner: { excluded: new Set([1]), liked: new Set([10]) } }),
+    );
+    expect(ids(deck).sort()).toEqual([11, 13, 14, 15]);
+  });
+
+  it('empty deck when filters block everything left', () => {
+    expect(buildDeck(input({ mySwiped: new Set([10, 11, 12]), blocked: new Set([13, 14, 15]) }))).toEqual([]);
+  });
+
   it('same inputs and RNG seed ⇒ same order; another seed ⇒ usually different', () => {
     const many: DeckRecipe[] = Array.from({ length: 30 }, (_, i) => ({ id: i + 1, ingredientIds: [] }));
     const a = ids(buildDeck(input({ recipes: many, rng: seeded(7) })));
