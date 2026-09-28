@@ -1,23 +1,23 @@
-// All recipes, unfiltered by exclusions, with filters for my swipes and our matches, my
-// advanced filters and my "Do not eat" marks (only my own settings apply here).
+// All recipes, unfiltered by exclusions, with filters for my swipes and our matches, the
+// shared Filters panel and my "Do not eat" marks (the partner's marks don't apply here).
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../components/Button';
-import { Chip } from '../components/Chip';
-import { FilterPanel } from '../components/FilterPanel';
-import { UndoToast } from '../components/UndoToast';
-import { useAuth } from '../data/auth';
-import { cachedRecipes, loadMyRecipeMarks, type SwipeFilter } from '../data/discover';
-import { RecipeMeta } from '../components/RecipeMeta';
-import { errorText } from '../data/errors';
-import { toFilterable, useRecipeSettings } from '../data/filters';
-import { photoUrl, type RecipeSummary } from '../data/recipes';
-import { t } from '../i18n';
-import { activeFilterCount, filterOptions, NO_FILTERS, visibleInOverview } from '../logic/filters';
-import { colors, font, radius, spacing } from '../theme/tokens';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
+import { FilterSheet, FiltersButton } from '../../components/FilterSheet';
+import { UndoToast } from '../../components/UndoToast';
+import { useAuth } from '../../data/auth';
+import { cachedRecipes, loadMyRecipeMarks, type SwipeFilter } from '../../data/discover';
+import { RecipeMeta } from '../../components/RecipeMeta';
+import { errorText } from '../../data/errors';
+import { toFilterable, useRecipeSettings } from '../../data/filters';
+import { photoUrl, type RecipeSummary } from '../../data/recipes';
+import { t } from '../../i18n';
+import { activeFilterCount, visibleInOverview } from '../../logic/filters';
+import { colors, font, radius, spacing } from '../../theme/tokens';
 
 const FILTERS: { key: SwipeFilter; label: 'recipes.filterAll' | 'recipes.filterLiked' | 'recipes.filterNope' | 'recipes.filterMatches' }[] = [
   { key: 'all', label: 'recipes.filterAll' },
@@ -35,8 +35,8 @@ export default function Recipes() {
   const [marks, setMarks] = useState<Marks | null>(null);
   const [filter, setFilter] = useState<SwipeFilter>('all');
   const [error, setError] = useState<unknown>(null);
-  const { settings, loadError, saveError, reload, setFilters, setHidden } = useRecipeSettings();
-  const [panelOpen, setPanelOpen] = useState(false);
+  const { settings, loadError, saveError, reload, setHidden } = useRecipeSettings();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   /** The recipe just marked "Do not eat", while Undo is offered. */
   const [justHidden, setJustHidden] = useState<RecipeSummary | null>(null);
   const hideToast = useCallback(() => setJustHidden(null), []);
@@ -53,7 +53,6 @@ export default function Recipes() {
     }, [userId]),
   );
 
-  const options = useMemo(() => filterOptions((recipes ?? []).map(toFilterable)), [recipes]);
   const shown = useMemo(() => {
     if (!recipes || !settings) return null;
     if (filter !== 'all' && !marks) return null;
@@ -72,9 +71,11 @@ export default function Recipes() {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Button label={`‹ ${t('recipes.back')}`} variant="text" onPress={() => router.back()} />
-        <Text style={styles.title}>{t('recipes.title')}</Text>
-        {shown ? <Text style={styles.count}>{t('recipes.count', { count: shown.length })}</Text> : null}
+        <View style={styles.headerText}>
+          <Text style={styles.title}>{t('recipes.title')}</Text>
+          {shown ? <Text style={styles.count}>{t('recipes.count', { count: shown.length })}</Text> : null}
+        </View>
+        <FiltersButton onPress={() => setFiltersOpen(true)} />
       </View>
       <View style={styles.filters}>
         {FILTERS.map((f) => (
@@ -86,20 +87,6 @@ export default function Recipes() {
           />
         ))}
       </View>
-      {settings ? (
-        <View style={styles.advancedRow}>
-          <Button
-            label={activeCount > 0 ? t('filters.advancedCount', { count: activeCount }) : t('filters.advanced')}
-            variant="text"
-            onPress={() => setPanelOpen((o) => !o)}
-          />
-          <Button
-            label={t('filters.listLink', { count: settings.hidden.size })}
-            variant="text"
-            onPress={() => router.push('/do-not-eat')}
-          />
-        </View>
-      ) : null}
       {saveError ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {t('filters.saveFailed', { message: errorText(saveError) })}
@@ -117,14 +104,11 @@ export default function Recipes() {
       ) : (
         <FlatList
           data={shown}
-          ListHeaderComponent={
-            panelOpen && settings ? <FilterPanel filters={settings.filters} options={options} onChange={setFilters} /> : null
-          }
           ListEmptyComponent={
             activeCount > 0 ? (
               <View style={[styles.center, styles.emptyList]}>
-                <Text style={styles.body}>{t('filters.emptyOverview')}</Text>
-                <Button label={t('filters.clear')} onPress={() => setFilters(NO_FILTERS)} />
+                <Text style={styles.body}>{t('filters.empty')}</Text>
+                <FiltersButton variant="primary" onPress={() => setFiltersOpen(true)} />
               </View>
             ) : (
               <Text style={[styles.body, styles.emptyList]}>{t('recipes.filterEmpty')}</Text>
@@ -178,18 +162,19 @@ export default function Recipes() {
           onTimeout={hideToast}
         />
       ) : null}
+      <FilterSheet visible={filtersOpen} onClose={() => setFiltersOpen(false)} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  header: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, alignItems: 'flex-start' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
+  headerText: { flex: 1 },
   title: { fontSize: font.hero, fontWeight: '800', color: colors.text, paddingHorizontal: spacing.sm },
   count: { fontSize: font.small, color: colors.textMuted, paddingHorizontal: spacing.sm },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.md },
   emptyList: { paddingTop: spacing.xl },
-  advancedRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: spacing.sm },
   error: { fontSize: font.body, fontWeight: '600', color: colors.primaryStrong, paddingHorizontal: spacing.md },
   doNotEat: { minHeight: 44, maxWidth: 72, justifyContent: 'center' },
   doNotEatLabel: { fontSize: font.small, fontWeight: '700', color: colors.primaryStrong, textAlign: 'center' },

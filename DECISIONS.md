@@ -30,7 +30,7 @@ Short, dated. Read before changing business rules. Replace entries that become o
 ## Pairing
 - **2026-09-26 — Pairing codes: 6 chars, no 0/O/1/I/L.** Readable when typed by hand.
 - **2026-09-26 — QR payload is `foodiematch:pair:<CODE>`**, so unrelated QR codes are rejected; the scanner and manual entry share `parsePairingCode` (any case, spaces/dashes allowed).
-- **2026-09-26 — Pairing UI lives on one screen** (my QR + countdown, scan, type code, email invite); incoming invites also show on Home. Both phones switch to "paired" through the realtime profile update, with no polling.
+- **2026-09-26 — Pairing UI lives on one screen** (my QR + countdown, scan, type code, email invite); incoming invites also show on Swipe and Profile. Both phones switch to "paired" through the realtime profile update, with no polling.
 - **2026-09-26 — Pairing actions are SECURITY DEFINER RPCs.** Under RLS, B can't read A's code/invite rows directly.
 - **2026-09-26 — Pairing by either method declines all pending invites to/from both partners** and deletes their unused codes. A user can only be in one couple (also enforced by a trigger: max 2 members).
 - **2026-09-26 — Inviter can't cancel an invite** (MVP); a wrong-email invite just stays pending until either side pairs.
@@ -48,7 +48,7 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — The deck is rebuilt only when exclusions changed** since it was built (not on every return from a recipe), so the top card stays put.
 - **2026-09-26 — "It's a match!" on both phones**: the swiping phone from the RPC result, the partner's via realtime INSERT on `matches`. `matches.via` (`swipe` | `retroactive`) keeps retroactive matches from triggering the full-screen celebration. Each recipe is celebrated once per app session, over any screen (global overlay).
 - **2026-09-26 — Recipe list filters: All / Liked / Nope / Matches** (my discover swipes, our visible matches). Exclusions never hide recipes there.
-- **2026-09-26 — "N new!" on the Matches button** counts matches (live or retroactive) created after the newest match I last saw on the Matches screen. Stored per device in localStorage and compared with server timestamps, so phone clock skew doesn't matter. The full "It's a match!" animation is for live swipes only.
+- **2026-09-26 — The number badge on the Matches tab** counts matches (live or retroactive) created after the newest match I last saw on the Matches screen. Stored per device in localStorage and compared with server timestamps, so phone clock skew doesn't matter. The full "It's a match!" animation is for live swipes only.
 - **2026-09-26 — Removing a match**: long-press a tile on Matches, or "Remove from matches" on the recipe; always confirmed. It disappears for both (realtime) and is never re-created.
 - **2026-09-26 — Matches filters: cook time (any / ≤30 / ≤45 / ≤60 min; unknown cook time only under "any") and cuisine** (only cuisines present in our matches).
 - **2026-09-26 — Match rule implemented twice:** pure TS `isMatch()` is the tested spec; a mirrored SQL function runs in triggers (needed for realtime on both phones). Change both together.
@@ -62,7 +62,7 @@ Short, dated. Read before changing business rules. Replace entries that become o
 - **2026-09-26 — Ranking is tap-in-order, not drag.** Easier to use and accessible; same result (a full order).
 - **2026-09-26 — Reshuffle = cancel the session and start a new one with the same filters** (Tonight swipes are unique per session).
 - **2026-09-26 — The swipe round is the couple's visible matches with the session filters**, shuffled per phone. Partners can read each other's Tonight swipes (RLS policy) because the outcome needs both.
-- **2026-09-26 — Winner screen stays until "Done"** on each phone (dismissed session id in localStorage). A partner who started a round shows a "Join" banner on Home.
+- **2026-09-26 — Winner screen stays until "Done"** on each phone (dismissed session id in localStorage). A partner who started a round shows a "Join" banner on Matches and a "!" badge on its tab.
 - **2026-09-26 — Cooked history = sessions with `status = 'done'`.** No separate table.
 
 ## Week plan
@@ -92,10 +92,25 @@ Source: `final-prd.md` of grooming run 1 for `advanced-recipe-filters` (2026-09-
 - **2026-09-28 — Cuisine = `recipes.cuisine`** (TheMealDB area, "Italian"), not a country name.
 - **2026-09-28 — DL-018 (open): Undo is shown for 5 seconds.** Afterwards only the "Do not eat" list brings a recipe back.
 - **2026-09-28 — DL-019 (open): a missing value passes only its own filter;** the other filters still apply.
-- **2026-09-28 — DL-015 privacy: filters and marks are own-rows-only (RLS)**, unlike exclusions. Matching needs the partner's effect, so `partner_blocked_recipes()` returns recipe ids only, never which filter or mark caused them. The rule exists twice: `blockedForMatching`/`passesFilters` (TS) and `private.blocked_recipe_ids` (SQL); change both together.
-- **2026-09-28 — Filters and marks are direct client writes** (own rows): they never change membership or match state.
+- **2026-09-28 — DL-015 privacy: "Do not eat" marks are own-rows-only (RLS)**, unlike exclusions (filters became shared later, see UX simplification). Matching needs the partner's effect, so `partner_blocked_recipes()` returns recipe ids only. The rule exists twice: `blockedForMatching`/`passesFilters` (TS) and `private.blocked_recipe_ids` + `private.filters_for` (SQL); change both together.
+- **2026-09-28 — Marks are direct client writes** (own rows): they never change membership or match state.
 - **2026-09-28 — Marking "Do not eat" keeps the match**; the recipe just won't be in the list, Discover or the next week's selection.
 - **2026-09-28 — DL-014/016 (tech questions):** every seeded recipe has a cook time and difficulty; 190 have no cuisine. Swipes already record likes and nopes with timestamps (DoD-06); plans are deleted when their week ends, so plan completion (DoD-07) can't be measured without a new log. Not built.
+
+## UX simplification
+Source: `final-prd.md` of grooming run 1 for `ux-simplification` (2026-09-28). All five stories built.
+- **2026-09-28 — The app stays English**: the PRD's Czech labels are used translated ("Swipování" → Swipe, "Shody" → Matches, "Recepty" → Recipes, "Jídelníček" → Week plan, "Žádný recept neodpovídá filtrům." → "No recipe matches the filters."). DoD-05 compares meaning, not the Czech wording.
+- **2026-09-28 — The function list (US-04 dependency) was drafted by the developer**, in SPEC §10, since the PO hadn't written one. Nothing was removed.
+- **2026-09-28 — Home is gone; "profile" = a Profile screen** with what Home had besides navigation (name, pairing, invites, "I don't eat", sign out), opened from a round button in Swipe's header. The PRD kept the profile out of scope, but its content needed a home. Swipe therefore has one button more than US-04's list (Profile); undo also stays, since removing it would drop a function.
+- **2026-09-28 — Tonight starts from Matches** (it picks one of our matches). Its invite and the week plan invite became tab badges ("!"); incoming pairing invites show on Swipe (the start screen) and Profile.
+- **2026-09-28 — "Filters (n)" keeps the count** (it existed before; the PRD lists it as "Later" only because it didn't know).
+- **2026-09-28 — Shared filters = one row per couple** (`couple_recipe_filters`), written only by RPC `set_recipe_filters`, read by `get_recipe_filters` and live by realtime. Unpaired users keep `user_recipe_filters`; pairing starts a couple with no filters. "Do not eat" marks stay personal: they are marks on recipes, not filters, and the PRD makes only filters shared.
+- **2026-09-28 — DL-012: the migration deletes all per-user filter rows** so nobody has filters on after the update. Swipes, matches, plans and "Do not eat" marks are untouched (DL-014).
+- **2026-09-28 — DL-015 tech answer:** before, Recipes used only my filters and Discover both partners'; now both use the shared set (Discover also both partners' marks), so the two screens agree.
+- **2026-09-28 — DL-016 tech answer:** a new feature becomes a new tab or lives inside one of the four; Expo Router `(tabs)` group, screens outside it open over the tabs.
+- **2026-09-28 — A filter change rebuilds the deck while Swipe is shown** (the screen reloads on the settings version); the card on top stays (`keepOnTop`), swiped cards never return.
+- **2026-09-28 — `partner_blocked_recipes` returns one `bigint[]`**, not rows: PostgREST's 1000-row limit silently cut the set once more than 1000 recipes were blocked (seen on the local DB with test recipes).
+- **2026-09-28 — JS tabs from `expo-router/js-tabs`** (the root `Tabs` export is deprecated in SDK 57) with Ionicons from `@expo/vector-icons` (+ `expo-font`), both in Expo Go.
 
 ## Tooling
 - **2026-09-26 — Expo SDK 57, routes in `src/app/`** (scaffold default).
@@ -109,7 +124,6 @@ Source: `final-prd.md` of grooming run 1 for `advanced-recipe-filters` (2026-09-
 - **2026-09-26 — Screen tests live in `src/__tests__/`** (every file under `src/app/` becomes a route). They use React Native Testing Library 14 (async `render`) with the data layer and the animated card mocked.
 - **2026-09-26 — `expo-asset` is a direct dependency**: `expo-sqlite` imports it, and only Metro found the copy nested inside `expo`.
 - **2026-09-26 — Seed script runs on plain Node 24 type stripping** (no tsx/ts-node); `tsconfig` allows `.ts` import extensions so it type-checks with the app.
-- **2026-09-26 — A temporary recipe list screen** gives access to recipe details until Discover exists. It is deliberately unfiltered; browse filters come after swiping works.
 - **2026-09-26 — Recipe detail marks what I and my partner don't eat**: a notice / "{partner} won't eat this" badge at the top and a note on each affected line. Also the practical way to check the partner badge, since partner-excluded cards sit at the end of an ~800-card deck.
 - **2026-09-26 — Ingredient lines show name first, then amount/purpose** ("Vegetable Oil · For frying"); `recipe_ingredients.name`/`measure` store the source parts, `raw_text` the full line.
 - **2026-09-26 — No guessing of recipe parts** ("for the filling"). TheMealDB drops section headings; splitting on repeated ingredients misplaced lines in many of the 215 recipes with repeats (e.g. red + green pepper), so repeats are shown as listed.

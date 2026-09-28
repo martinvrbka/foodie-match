@@ -1,4 +1,4 @@
-import { buildDeck, type DeckInput, type DeckRecipe } from '../deck';
+import { buildDeck, type DeckCard, type DeckInput, type DeckRecipe, keepOnTop } from '../deck';
 
 /** Small deterministic RNG (mulberry32) so orders are reproducible. */
 function seeded(seed: number) {
@@ -102,5 +102,20 @@ describe('buildDeck', () => {
     const c = ids(buildDeck(input({ recipes: many, rng: seeded(8) })));
     expect(a).toEqual(b);
     expect(a).not.toEqual(c);
+  });
+});
+
+describe('keepOnTop (deck rebuilt because the shared filters changed)', () => {
+  const card = (recipeId: number): DeckCard => ({ recipeId, partnerExcluded: false });
+  const deck = [card(1), card(2), card(3)];
+
+  it('keeps the card I was looking at on top when the new filters still allow it', () => {
+    expect(keepOnTop(deck, 3).map((c) => c.recipeId)).toEqual([3, 1, 2]);
+  });
+
+  it('leaves the new deck as it is when the card is filtered out now, or there was none', () => {
+    expect(keepOnTop(deck, 9)).toEqual(deck);
+    expect(keepOnTop(deck, null)).toEqual(deck);
+    expect(keepOnTop([], 1)).toEqual([]);
   });
 });

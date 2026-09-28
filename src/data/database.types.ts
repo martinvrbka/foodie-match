@@ -48,6 +48,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"couple_recipe_filters": {
+                  Row: {
+                    "couple_id": string,"cuisines": (string)[],"difficulties": (string)[],"max_minutes": number | null,"updated_at": string,"updated_by": string | null
+                  }
+                  Insert: {
+                    "couple_id": string,"cuisines"?: (string)[],"difficulties"?: (string)[],"max_minutes"?: number | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "couple_id"?: string,"cuisines"?: (string)[],"difficulties"?: (string)[],"max_minutes"?: number | null,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "couple_recipe_filters_couple_id_fkey"
+      columns: ["couple_id"]
+isOneToOne: true
+      referencedRelation: "couples"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "couple_recipe_filters_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"couples": {
                   Row: {
                     "created_at": string,"dissolved_at": string | null,"id": string
@@ -551,13 +576,16 @@ isOneToOne: false
 "discover_swipe":
 { Args: { "p_liked": boolean,"p_recipe_id": number }; Returns: Json
                            },
+"get_recipe_filters":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "my_pending_invites":
 { Args: Record<PropertyKey, never>; Returns: {
               "from_name": string,"invite_id": string,"sent_at": string
             }[]
                            },
 "partner_blocked_recipes":
-{ Args: Record<PropertyKey, never>; Returns: number[]
+{ Args: Record<PropertyKey, never>; Returns: (number)[]
                            },
 "plan_accept":
 { Args: { "p_plan": string }; Returns: undefined
@@ -609,6 +637,9 @@ isOneToOne: false
                            },
 "set_leftovers_ok":
 { Args: { "p_ok": boolean,"p_recipe_id": number }; Returns: undefined
+                           },
+"set_recipe_filters":
+{ Args: { "p_cuisines": (string)[],"p_difficulties": (string)[],"p_max_minutes": number }; Returns: undefined
                            },
 "start_tonight":
 { Args: { "p_filters"?: Json }; Returns: string

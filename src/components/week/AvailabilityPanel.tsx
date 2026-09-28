@@ -26,7 +26,7 @@ export function AvailabilityPanel({ lines, candidateCount, partnerName, partnerD
           <Text style={styles.body} accessibilityRole="alert">
             {t('week.needMatches')}
           </Text>
-          <Button label={t('week.swipeMore')} onPress={() => router.push('/discover')} />
+          <Button label={t('week.swipeMore')} onPress={() => router.navigate('/')} />
         </>
       ) : (
         <>
@@ -46,7 +46,7 @@ export function AvailabilityPanel({ lines, candidateCount, partnerName, partnerD
           {anyShort ? (
             <>
               <Text style={styles.muted}>{t('week.shortHint')}</Text>
-              <Button label={t('week.swipeMore')} variant="text" onPress={() => router.push('/discover')} />
+              <Button label={t('week.swipeMore')} variant="text" onPress={() => router.navigate('/')} />
             </>
           ) : null}
           <Text style={styles.muted}>

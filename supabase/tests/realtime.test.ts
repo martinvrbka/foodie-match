@@ -1,5 +1,5 @@
 // Realtime + RLS: the partner's phone hears about a live match, the invitee hears
-// about an invite, and nobody else does.
+// about an invite, a filter change reaches the partner, and nobody else hears any of it.
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { type Client, coupleOf, like, ok, pair, recipe, signUp } from './helpers';
 
@@ -90,5 +90,25 @@ it('both profiles update live when they pair', async () => {
     );
   } finally {
     await aHears.stop();
+  }
+});
+
+it("a partner's filter change reaches my phone live; another couple does not hear it", async () => {
+  const [a, b, c, d] = [await signUp('a'), await signUp('b'), await signUp('c'), await signUp('d')];
+  await pair(a, b);
+  await pair(c, d);
+  const coupleId = await coupleOf(a);
+  await Promise.all([a, c].map((u) => u.client.realtime.setAuth()));
+  const aHears = await listen(a.client, 'couple_recipe_filters', `couple_id=eq.${coupleId}`);
+  const cHears = await listen(c.client, 'couple_recipe_filters');
+  try {
+    await ok(b.client.rpc('set_recipe_filters', { p_max_minutes: 30, p_difficulties: [], p_cuisines: [] }));
+    await eventually(() => aHears.events.length > 0);
+    expect(aHears.events[0].new).toMatchObject({ max_minutes: 30, updated_by: b.id });
+    await settle();
+    expect(cHears.events).toEqual([]);
+  } finally {
+    await aHears.stop();
+    await cHears.stop();
   }
 });

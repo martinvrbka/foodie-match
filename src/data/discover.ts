@@ -1,6 +1,6 @@
 import { expandExclusions } from '../logic/match';
 import type { DeckInput, DeckRecipe } from '../logic/deck';
-import { blockedForMatching } from '../logic/filters';
+import { blockedForMatching, filtersHoldBack } from '../logic/filters';
 import { cachedIngredients } from './exclusions';
 import { loadMySettings, loadPartnerBlocked, toFilterable } from './filters';
 import { listRecipes, type RecipeSummary } from './recipes';
@@ -63,7 +63,7 @@ export interface DiscoverData {
   recipes: Map<number, RecipeSummary>;
   deckInput: Omit<DeckInput, 'rng'>;
   partnerName: string | null;
-  /** Some recipes I haven't swiped are held back by my or my partner's filters/marks. */
+  /** The filters hide some recipe I haven't swiped yet (filtersHoldBack). */
   filtersHoldBack: boolean;
 }
 
@@ -97,7 +97,7 @@ export async function loadDiscover(userId: string): Promise<DiscoverData> {
   return {
     recipes: new Map(recipes.map((r) => [r.id, r])),
     partnerName: partner?.display_name ?? null,
-    filtersHoldBack: [...blocked].some((id) => !mySwiped.has(id)),
+    filtersHoldBack: filtersHoldBack(recipes.map(toFilterable), settings.filters, mySwiped),
     deckInput: {
       recipes: deckRecipes,
       myExcluded: expandExclusions(explicitOf(userId), nodes),

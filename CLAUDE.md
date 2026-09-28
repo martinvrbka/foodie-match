@@ -1,6 +1,6 @@
 # Foodie Match
 
-Tinder-style recipe picker for a couple (2 users). Each partner sets ingredients they don't eat (plus private recipe filters and "Do not eat" marks), the phones pair via QR or in-app email invite, both swipe recipes, and mutual likes become Matches. "Tonight" mode runs a quick swipe + Borda ranking round on the matches to pick one dish. The weekly plan fills a Mon–Sun calendar from re-swiped matches, with planned leftovers and a prep schedule.
+Tinder-style recipe picker for a couple (2 users), navigated by a bottom panel (Swipe · Matches · Recipes · Week plan). Each partner sets ingredients they don't eat and private "Do not eat" marks; recipe filters are shared by the couple; the phones pair via QR or in-app email invite, both swipe recipes, and mutual likes become Matches. "Tonight" mode runs a quick swipe + Borda ranking round on the matches to pick one dish. The weekly plan fills a Mon–Sun calendar from re-swiped matches, with planned leftovers and a prep schedule.
 
 - **Read `SPEC.md`** for product requirements (source of truth).
 - **Read `DECISIONS.md` before changing any business rule** (filtering, matching, pairing, Tonight, week plan).
@@ -34,12 +34,12 @@ npx expo prebuild --platform android && (cd android && ./gradlew assembleRelease
 ```
 
 ## Folder map
-- `src/app/` — Expo Router screens only; thin, no business logic.
+- `src/app/` — Expo Router screens only; thin, no business logic. `(tabs)/` = the bottom panel (Swipe `index`, `matches`, `recipes`, `week`); other screens open over it.
 - `src/logic/` — pure business logic (normalize, deck, match, recipe filters, Borda, Tonight outcome, week plan: dates, selection, Generate, edits, leftovers) + tests. See its CLAUDE.md.
 - `src/theme/` — color/spacing tokens and WCAG contrast checker.
 - `src/i18n/` — all UI strings (`en.ts`) and `t()`.
 - `src/data/` — Supabase client, auth, queries, realtime hooks, error → string mapping, generated DB types.
-- `src/components/` — reusable UI (buttons, fields, chips, swipe card); `week/` holds the week plan's setup grid, re-swipe, availability and calendar.
+- `src/components/` — reusable UI (buttons, fields, chips, swipe card, Filters panel); `week/` holds the week plan's setup grid, re-swipe, availability and calendar.
 - `src/__tests__/` — screen tests for critical flows (not under `src/app/`, which would make them routes).
 - `supabase/migrations/` — schema, RLS, triggers, RPCs as SQL. `supabase/tests/` — DB integration tests (`npm run test:db`).
 - `scripts/` — `seed/themealdb.ts` (recipe import, plain Node 24 with type stripping; imports `src/logic/*.ts` with `.ts` extensions) and `db-push.sh`.

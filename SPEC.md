@@ -42,7 +42,7 @@ Personal MVP for 2 users. Optimize for working end-to-end and feeling good to us
 - `week_plan_slots` (plan_id, day, meal `breakfast` | `lunch` | `snack` | `dinner`, recipe_id, locked, note, changed_by, changed_at): a row per switched-on slot
 - `week_plan_members` (plan_id, user_id, reswipe_done, seen_at), `week_plan_swipes` (plan_id, user_id, recipe_id, liked)
 - `couple_no_leftovers` (couple_id, recipe_id): "Not good for leftovers"
-- `user_recipe_filters` (user_id, max_minutes, difficulties, cuisines), `user_hidden_recipes` (user_id, recipe_id): "Do not eat" marks. Private to their owner.
+- `couple_recipe_filters` (couple_id, max_minutes, difficulties, cuisines, updated_by): one shared set per couple. `user_recipe_filters` (same columns per user): used only while unpaired. `user_hidden_recipes` (user_id, recipe_id): "Do not eat" marks, private to their owner.
 
 RLS: users may only read and write data belonging to themselves or their couple.
 
@@ -71,7 +71,7 @@ RLS: users may only read and write data belonging to themselves or their couple.
 - A user can be in only one couple. Reject pairing when either side is already paired, with a clear message.
 - Unpair in settings (with confirmation). Unpairing keeps swipe history but clears matches for that couple.
 
-### 4. Discover swiping
+### 4. Discover swiping (the Swipe tab)
 - Tinder-style card stack: swipe right = like, left = nope, plus buttons for accessibility. Undo last swipe.
 - **Deck filtering (critical):** each user's deck is filtered by **their OWN exclusions only**. Recipes the partner won't eat still appear.
 - Recipes containing an ingredient the partner excludes are **placed at the end of the deck** with a badge "{partner} won't eat this". Likes are still saved.
@@ -111,15 +111,33 @@ Source: grooming package `foodie-match-couple-meal-plan/run-1_2026-09-26/final-p
 
 ### 8. Advanced filters and "Do not eat"
 Source: grooming package `advanced-recipe-filters/run-1_2026-09-28/final-prd.md` (US-01 to US-06, all built).
-- **Filters (US-01):** "Advanced filters" on the recipe list opens a panel labelled "Also applies to weekly matching": max preparation time (Any / 15 / 30 / 45 / 60 / 90 / 120 min), difficulty (Easy / Medium / Hard, several) and cuisine (only cuisines recipes have, several). The button shows the count, "Advanced filters (2)". "Clear filters" resets all three, not "Do not eat" marks.
+- **Filters (US-01):** "Filters" on Swipe and Recipes opens one panel over the screen (see §9), labelled "Also applies to weekly matching": max preparation time (Any / 15 / 30 / 45 / 60 / 90 / 120 min), difficulty (Easy / Medium / Hard, several) and cuisine (only cuisines recipes have, several). The button shows the count, "Filters (2)". "Clear filters" resets all three, not "Do not eat" marks.
 - **Rules:** a recipe with no cook time is hidden by any max time; one with no difficulty or cuisine passes that filter (others still apply).
-- **Kept (US-02)** in the database: the same on every device, and they keep shaping the partner's matching while I'm away.
+- **Shared by the couple** (ux-simplification DL-002): one set for both partners; a change by either applies to both right away, without a notice, also in the middle of swiping (already swiped cards never come back; the card on top stays if still allowed). Unpaired: my own set; a new couple starts with none. Kept in the database, the same on every device.
 - **"Do not eat" (US-03):** on each recipe in the list and on the recipe screen. The recipe disappears, "Hidden: you won't see this recipe again" offers Undo for 5 seconds. Existing matches and planned dishes stay.
-- **"Do not eat" list (US-04):** my marks with "Show again". Partners never see or change each other's filters or marks.
-- **Where they apply:** the recipe list uses only my own settings. Discover and the week plan's re-swipe selection offer only recipes that pass **both** partners' filters and neither marked. Already-dealt cards aren't withdrawn.
-- **Empty states (US-06):** list: "No recipes match your filters" + Clear filters. Discover: "No more recipes match your and your partner's filters. Your partner's filters may be limiting recipes, so ask your partner." + Clear filters (mine only).
+- **"Do not eat" list (US-04):** my marks with "Show again", reached from the Filters panel. Partners never see or change each other's marks.
+- **Where they apply:** the recipe list: the shared filters + my marks. Swipe and the week plan's re-swipe selection: the shared filters and neither partner's marks.
+- **Empty states:** when the filters leave no recipe, Swipe and Recipes say "No recipe matches the filters." with a "Filters" button.
 
-### 9. Visual design
+### 9. Navigation (grooming package `ux-simplification/run-1_2026-09-28/final-prd.md`, US-01–05)
+- A bottom panel with four items: **Swipe · Matches · Recipes · Week plan**. The app opens on Swipe; Matches and Week plan are one tap away. Tab screens keep their state when you switch (deck position, plan). No back buttons on tab screens.
+- Main task and buttons per screen: **Swipe** = like / nope (+ undo), Filters, Profile. **Matches** = browse matches (+ Tonight, own cook-time/cuisine chips). **Recipes** = find a recipe (All/Liked/Nope/Matches chips, Filters, "Do not eat" per row). **Week plan** = build the week.
+- Badges on the panel replace Home's banners: Matches shows the number of new matches, or "!" when the partner started a Tonight round; Week plan shows "!" when the partner is planning a week I haven't joined.
+- Where every former Home function is now:
+
+| Function (before: on Home unless noted) | Now |
+|---|---|
+| Discover (swiping) | Swipe tab (start screen) |
+| Matches (N) + "N new!" | Matches tab + badge |
+| What do we eat tonight? / Join banner | Button / banner on Matches, "!" badge |
+| Plan our week / "Plan for … in progress" banner | Week plan tab, "!" badge (the plan says "… already started planning") |
+| Browse recipes | Recipes tab |
+| Advanced filters, Clear filters (Recipes; Discover empty state) | Filters panel on Swipe and Recipes |
+| Do not eat list (Recipes) | Filters panel |
+| I don't eat | Profile, Filters panel, Swipe's empty state |
+| Name, email, paired with / Pairing settings, Pair with partner, incoming invites, Sign out | Profile (button in Swipe's header); incoming invites also on Swipe |
+
+### 10. Visual design
 Warm, appetite-associated colors as theme tokens (no hardcoded colors in components):
 - Primary (tomato red) `#E4572E`: like actions, icons, large bold text. CTA buttons with normal-size labels use `primaryStrong` `#C8431F` (AA).
 - Secondary (saffron) `#F29E4C`; Accent (mustard) `#F6C85F` for highlights and match celebration; Fresh (herb green) `#6A994E` for success/match confirmations only.

@@ -1,5 +1,5 @@
-// Advanced filters and "Do not eat" marks: private to each partner, but both partners'
-// settings shape matching through partner_blocked_recipes().
+// Advanced filters are shared by a couple (one set, either partner changes it); "Do not eat"
+// marks are private to each partner. Both shape matching through partner_blocked_recipes().
 import { admin, anon, ok, pair, recipe, signUp, type TestUser } from './helpers';
 
 async function dish(over: { cook_time_min?: number | null; difficulty?: string | null; cuisine?: string | null }) {
@@ -9,7 +9,10 @@ async function dish(over: { cook_time_min?: number | null; difficulty?: string |
 }
 
 const setFilters = (u: TestUser, max_minutes: number | null, difficulties: string[] = [], cuisines: string[] = []) =>
-  ok(u.client.from('user_recipe_filters').upsert({ max_minutes, difficulties, cuisines }, { onConflict: 'user_id' }));
+  ok(u.client.rpc('set_recipe_filters', { p_max_minutes: max_minutes as number, p_difficulties: difficulties, p_cuisines: cuisines }));
+
+const getFilters = async (u: TestUser) =>
+  (await ok(u.client.rpc('get_recipe_filters'))).data as { max_minutes: number | null; difficulties: string[]; cuisines: string[] };
 
 const markDoNotEat = (u: TestUser, recipe_id: number) => ok(u.client.from('user_hidden_recipes').insert({ recipe_id }));
 
@@ -18,40 +21,65 @@ async function partnerBlocked(u: TestUser, among: number[]) {
   return (data as number[]).filter((id) => among.includes(id)).sort((a, b) => a - b);
 }
 
-describe('privacy', () => {
-  it("a partner can't read, change or delete my filters or marks", async () => {
+describe('shared filters', () => {
+  it('a paired couple has one set of filters: a change by either applies to both', async () => {
+    const [a, b] = [await signUp('a'), await signUp('b')];
+    await pair(a, b);
+    expect(await getFilters(b)).toEqual({ max_minutes: null, difficulties: [], cuisines: [] });
+    await setFilters(a, 45, ['easy'], ['Italian']);
+    expect(await getFilters(b)).toEqual({ max_minutes: 45, difficulties: ['easy'], cuisines: ['Italian'] });
+    await setFilters(b, null);
+    expect(await getFilters(a)).toEqual({ max_minutes: null, difficulties: [], cuisines: [] });
+    // Both can read the row (needed for live updates); nobody writes it directly.
+    const row = await ok(a.client.from('couple_recipe_filters').select('updated_by').single());
+    expect(row.data!.updated_by).toBe(b.id);
+    await a.client.from('couple_recipe_filters').update({ max_minutes: 15 }).eq('updated_by', b.id);
+    expect((await getFilters(a)).max_minutes).toBeNull();
+  });
+
+  it("another couple can't see our filters", async () => {
+    const [a, b, c] = [await signUp('a'), await signUp('b'), await signUp('c')];
+    await pair(a, b);
+    await setFilters(a, 30);
+    expect((await ok(c.client.from('couple_recipe_filters').select('couple_id'))).data).toEqual([]);
+    expect((await getFilters(c)).max_minutes).toBeNull();
+  });
+
+  it('unpaired users have their own filters; a new couple starts with none', async () => {
+    const [a, b] = [await signUp('a'), await signUp('b')];
+    await setFilters(a, 60);
+    expect((await getFilters(a)).max_minutes).toBe(60);
+    expect((await getFilters(b)).max_minutes).toBeNull();
+    await pair(a, b);
+    expect((await getFilters(a)).max_minutes).toBeNull();
+  });
+
+  it('"Do not eat" marks stay private', async () => {
     const [a, b] = [await signUp('a'), await signUp('b')];
     await pair(a, b);
     const r = await dish({});
-    await setFilters(a, 45);
     await markDoNotEat(a, r);
-
-    expect((await ok(b.client.from('user_recipe_filters').select('user_id'))).data).toEqual([]);
     expect((await ok(b.client.from('user_hidden_recipes').select('recipe_id'))).data).toEqual([]);
-    await b.client.from('user_recipe_filters').update({ max_minutes: 120 }).eq('user_id', a.id);
     await b.client.from('user_hidden_recipes').delete().eq('recipe_id', r);
     const { error } = await b.client.from('user_hidden_recipes').insert({ user_id: a.id, recipe_id: r });
     expect(error).not.toBeNull();
-
-    const mine = await ok(a.client.from('user_recipe_filters').select('max_minutes').single());
-    expect(mine.data!.max_minutes).toBe(45);
     expect((await ok(a.client.from('user_hidden_recipes').select('recipe_id'))).data).toEqual([{ recipe_id: r }]);
   });
 
   it('only the fixed max-time steps and known difficulties are accepted', async () => {
     const a = await signUp('a');
-    const { error: badTime } = await a.client.from('user_recipe_filters').upsert({ max_minutes: 300 }, { onConflict: 'user_id' });
-    expect(badTime).not.toBeNull();
-    const { error: badLevel } = await a.client
-      .from('user_recipe_filters')
-      .upsert({ difficulties: ['impossible'] }, { onConflict: 'user_id' });
-    expect(badLevel).not.toBeNull();
+    expect((await a.client.rpc('set_recipe_filters', { p_max_minutes: 300, p_difficulties: [], p_cuisines: [] })).error).not.toBeNull();
+    expect(
+      (await a.client.rpc('set_recipe_filters', { p_max_minutes: 30, p_difficulties: ['impossible'], p_cuisines: [] })).error,
+    ).not.toBeNull();
   });
 
-  it('not signed in: no access to settings or the RPC', async () => {
+  it('not signed in: no access to settings or the RPCs', async () => {
     const client = anon();
-    expect((await client.from('user_recipe_filters').select('user_id')).data ?? []).toEqual([]);
+    expect((await client.from('couple_recipe_filters').select('couple_id')).data ?? []).toEqual([]);
     expect((await client.rpc('partner_blocked_recipes')).error).not.toBeNull();
+    expect((await client.rpc('get_recipe_filters')).error).not.toBeNull();
+    expect((await client.rpc('set_recipe_filters', { p_max_minutes: 30, p_difficulties: [], p_cuisines: [] })).error).not.toBeNull();
   });
 });
 
@@ -73,8 +101,8 @@ describe('partner_blocked_recipes', () => {
     await setFilters(b, 60, ['easy', 'medium'], ['Italian']);
     await markDoNotEat(b, carbonara);
     expect(await partnerBlocked(a, all)).toEqual([slowItalian, untimed, mexican, hard, carbonara].sort((x, y) => x - y));
-    // My own settings don't show up as "partner" blocks.
-    expect(await partnerBlocked(b, all)).toEqual([]);
+    // The filters are shared, so they block for B's partner too; B's own mark doesn't.
+    expect(await partnerBlocked(b, all)).toEqual([slowItalian, untimed, mexican, hard].sort((x, y) => x - y));
   });
 
   it('is empty when unpaired', async () => {

@@ -1,7 +1,7 @@
 // Critical flows of the week plan: start dishes, Generate uses only dishes nobody
 // rejected, and calendar edits follow the repeat and leftover rules. Data layer mocked.
 import { render, screen, userEvent } from '@testing-library/react-native';
-import Week from '../app/week';
+import Week from '../app/(tabs)/week';
 
 const recipe = (id: number, title: string) => ({
   id,

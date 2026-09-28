@@ -3,6 +3,7 @@ import {
   blockedForMatching,
   type FilterableRecipe,
   filterOptions,
+  filtersHoldBack,
   MAX_TIME_OPTIONS,
   NO_FILTERS,
   passesFilters,
@@ -117,5 +118,22 @@ describe('toggleValue', () => {
   it('adds a missing value and removes a present one', () => {
     expect(toggleValue(['a'], 'b')).toEqual(['a', 'b']);
     expect(toggleValue(['a', 'b'], 'a')).toEqual(['b']);
+  });
+});
+
+describe('filtersHoldBack (Swipe shows "No recipe matches the filters.")', () => {
+  const recipes = [r(1, { cookTimeMin: 20 }), r(2, { cookTimeMin: 90 }), r(3, { cookTimeMin: 120 })];
+  const quick: RecipeFilters = { ...NO_FILTERS, maxMinutes: 30 };
+
+  it('is true when the filters hide a recipe I have not swiped yet', () => {
+    expect(filtersHoldBack(recipes, quick, new Set([1]))).toBe(true);
+  });
+
+  it('is false with no filters on, even if "Do not eat" marks or exclusions emptied the deck', () => {
+    expect(filtersHoldBack(recipes, NO_FILTERS, new Set())).toBe(false);
+  });
+
+  it('is false when everything the filters hide was already swiped', () => {
+    expect(filtersHoldBack(recipes, quick, new Set([2, 3]))).toBe(false);
   });
 });

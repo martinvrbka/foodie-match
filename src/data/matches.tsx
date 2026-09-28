@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { cachedRecipes } from './discover';
 import { useProfile } from './profile';
 import type { RecipeSummary } from './recipes';
@@ -145,10 +145,24 @@ export function matchesLastSeen(userId: string): string | null {
   }
 }
 
+const seenListeners = new Set<() => void>();
+
 export function markMatchesSeen(userId: string, at: string) {
   try {
     localStorage.setItem(seenKey(userId), at);
   } catch {
     // Not critical: the count just stays until next time.
   }
+  seenListeners.forEach((l) => l());
+}
+
+/** matchesLastSeen() that re-renders when the Matches screen marks matches seen. */
+export function useMatchesLastSeen(userId: string): string | null {
+  return useSyncExternalStore(
+    (l) => {
+      seenListeners.add(l);
+      return () => seenListeners.delete(l);
+    },
+    () => matchesLastSeen(userId),
+  );
 }

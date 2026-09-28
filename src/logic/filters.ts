@@ -40,7 +40,7 @@ export function passesFilters(r: FilterableRecipe, f: RecipeFilters): boolean {
   return true;
 }
 
-/** What I see in the recipe overview: my own filters and my own "Do not eat" marks only. */
+/** What I see in the recipe overview: our shared filters and my own "Do not eat" marks only. */
 export function visibleInOverview<T extends FilterableRecipe>(
   recipes: readonly T[],
   mine: RecipeFilters,
@@ -50,9 +50,9 @@ export function visibleInOverview<T extends FilterableRecipe>(
 }
 
 /**
- * Recipes matching must not offer: those failing my filters, marked by me, or
- * blocked by my partner's settings (the partner's set comes from the server, which
- * doesn't reveal why).
+ * Recipes matching must not offer: those failing our shared filters, marked by me, or
+ * blocked by my partner (the partner's set comes from the server, which doesn't reveal
+ * why; it includes the shared filters and the partner's "Do not eat" marks).
  */
 export function blockedForMatching(
   recipes: readonly FilterableRecipe[],
@@ -63,6 +63,18 @@ export function blockedForMatching(
   return new Set(
     recipes.filter((r) => myHidden.has(r.id) || partnerBlocked.has(r.id) || !passesFilters(r, mine)).map((r) => r.id),
   );
+}
+
+/**
+ * The filters hide some recipe I haven't swiped yet: an empty deck then says "No recipe
+ * matches the filters." (with a Filters button) instead of "You've seen every recipe".
+ */
+export function filtersHoldBack(
+  recipes: readonly FilterableRecipe[],
+  filters: RecipeFilters,
+  mySwiped: ReadonlySet<number>,
+): boolean {
+  return activeFilterCount(filters) > 0 && recipes.some((r) => !mySwiped.has(r.id) && !passesFilters(r, filters));
 }
 
 /** Values the filter panel offers: only difficulties and cuisines recipes actually have. */

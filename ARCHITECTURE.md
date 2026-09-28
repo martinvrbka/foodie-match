@@ -1,6 +1,6 @@
 # Architecture
 
-How Foodie Match is built today (week plan added 2026-09-26), and how it should evolve. Product rules live in [SPEC.md](SPEC.md), the reasons behind choices in [DECISIONS.md](DECISIONS.md).
+How Foodie Match is built today (bottom-panel navigation and shared filters added 2026-09-28), and how it should evolve. Product rules live in [SPEC.md](SPEC.md), the reasons behind choices in [DECISIONS.md](DECISIONS.md).
 
 ## Constraints that shape everything
 
@@ -57,15 +57,15 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 - **People:** `profiles` (1:1 with `auth.users`, created by trigger), `couples` (max 2 members, enforced by trigger).
 - **Pairing:** `pairing_codes` (6 chars, 10 min, single use), `pairing_invites` (in-app, matched on normalized email).
 - **Food:** `recipes` (with estimated `difficulty`), `recipe_ingredients` (name, measure, raw line), `ingredients` (canonical names, single-parent hierarchy), `user_excluded_ingredients` (explicit exclusions only; descendants are implied).
-- **Preferences:** `user_recipe_filters` (max time, difficulties, cuisines), `user_hidden_recipes` ("Do not eat"). Readable only by their owner.
+- **Preferences:** `couple_recipe_filters` (max time, difficulties, cuisines; one per couple, both read it, written by RPC), `user_recipe_filters` (the same while unpaired), `user_hidden_recipes` ("Do not eat", readable only by its owner).
 - **Activity:** `swipes` (`discover` or `tonight`), `matches` (`via` = `swipe` | `retroactive`, `removed_at`), view `visible_matches` (applies current exclusions at read time).
 - **Tonight:** `tonight_sessions` (stage, filters, shortlist, winner), `tonight_participants` (per-stage "done" flags, top picks), `tonight_rankings`.
 - **Week plan:** `week_plans` (one per couple and week; stage, this week's 30 picks, leftover setting), `week_plan_slots` (one row per switched-on slot: dish, lock, note, who changed it), `week_plan_members` (re-swipe done, last opened), `week_plan_swipes` (this week's re-swipe), `couple_no_leftovers`. Leftover pairs aren't stored; they're derived from the slots.
 
 ### Security model
 
-- **Reads:** RLS lets a user see their own rows plus their partner's (profile, exclusions, discover swipes, tonight swipes in shared sessions), and the couple's matches and sessions. Filters and "Do not eat" marks are own rows only; the partner's effect comes from `partner_blocked_recipes()` (recipe ids, no reasons). Recipes and ingredients are readable by any signed-in user; nothing is readable signed out.
-- **Writes:** clients may write directly only their own `display_name`, `onboarded` flag, exclusions, filters and "Do not eat" marks. Everything that changes membership, matches or Tonight state is a `SECURITY DEFINER` RPC in `public` that checks `auth.uid()`. Helpers live in the `private` schema, which the API doesn't expose.
+- **Reads:** RLS lets a user see their own rows plus their partner's (profile, exclusions, discover swipes, tonight swipes in shared sessions), and the couple's matches and sessions. The couple's filters are readable by both partners; "Do not eat" marks are own rows only, and the partner's effect comes from `partner_blocked_recipes()` (recipe ids, no reasons). Recipes and ingredients are readable by any signed-in user; nothing is readable signed out.
+- **Writes:** clients may write directly only their own `display_name`, `onboarded` flag, exclusions and "Do not eat" marks; filters go through `set_recipe_filters`. Everything that changes membership, matches or Tonight state is a `SECURITY DEFINER` RPC in `public` that checks `auth.uid()`. Helpers live in the `private` schema, which the API doesn't expose.
 - **Errors:** RPCs raise short codes (`code_expired`, `tonight_wrong_stage`); `src/data/errors.ts` maps them to readable text.
 - **Secrets:** the app ships only the publishable key. The secret key, access token and DB password stay in `.env` for the seed and deploy scripts.
 
@@ -73,6 +73,8 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 
 - **Matching:** `discover_swipe` inserts a swipe; a trigger calls `private.is_match` (SQL twin of `isMatch()` in `src/logic/match.ts`) and inserts `matches` with `via = 'swipe'`. Removing an exclusion or pairing runs `refresh_matches`, which creates `via = 'retroactive'` matches. The match rule therefore exists twice, TS and SQL, and both must change together.
 - **Deck:** the phone loads all recipes (~800), all recipe→ingredient pairs (~8k rows, paged), both partners' exclusions and swipes, my filters and marks and the partner's blocked ids, then the pure `buildDeck()` decides the order. Static data is cached for the app session.
+- **Navigation:** Expo Router `(tabs)` group with a bottom panel (Swipe · Matches · Recipes · Week plan); tab screens stay mounted. Profile, pairing, Tonight, recipe details, "I don't eat" and the "Do not eat" list are stack screens over the tabs. The tab layout owns the badges (new matches, Tonight and week plan invites) and the first-run redirect.
+- **Filters:** one app-wide `RecipeSettingsProvider` holds the filters and my marks, saves optimistically (rollback on error), listens to the couple's filter row over realtime and bumps a `version` after every saved change; Swipe rebuilds its deck on a new version.
 - **Live updates:** one app-wide `ProfileProvider` subscribes to `profiles`; `MatchProvider` subscribes to new matches and shows "It's a match!" over any screen. Screens with live data (invites, match list, Tonight) open their own channels with unique names and simply reload on any change.
 - **Week plan:** `setup → choosing → generated → accepted`. The phone computes the selection (`pickSelection`), the plan (`generatePlan`) and every edit (`swapSlot`, `moveSlot`…) and saves only changed slots with `plan_write_slots`; the server validates couple, stage, dates and that dishes are shared matches. Realtime on plans/slots/members reloads both phones (debounced, since Generate writes many rows). Plans that are over are deleted on load.
 - **Tonight:** a small state machine (`swiping → choosing | shortlisting → ranking | ranking → done`). Each phone computes the next stage with `tonightAdvance()` once both partners have finished, and calls `tonight_advance`, which accepts only the first write for that stage. Both phones may try; exactly one wins.
@@ -90,9 +92,8 @@ There is no custom backend server. The phones talk to Supabase directly. Postgre
 3. **The match rule and the filter rule are duplicated** in TS and SQL, guarded only by separate test suites, not by a test that compares them.
 4. **Session state lives in the phone's storage** (`expo-sqlite` localStorage): the Supabase session, "last seen matches" and the dismissed Tonight winner. There is no cross-device sync; that's acceptable for the use case.
 5. **Tonight RPCs are called through a loosely typed wrapper** (`src/data/tonight.ts`), unlike the rest of the data layer.
-6. **Navigation is a list of buttons on Home**, not tabs.
-7. **No CI:** tests run locally and in the pre-commit hook only.
-8. **Week plan rules run on the phone only**; the server checks membership and match rules, not leftover timing. Two phones editing the same slot at once: last write wins.
+6. **No CI:** tests run locally and in the pre-commit hook only.
+7. **Week plan rules run on the phone only**; the server checks membership and match rules, not leftover timing. Two phones editing the same slot at once: last write wins.
 
 ## Recommended future architecture
 
@@ -118,26 +119,22 @@ Adopt **TanStack Query** (pure JS, works in Expo Go):
 - Wrap every RPC in `src/data/rpc.ts` with types from `database.types.ts` (including Tonight) and delete the loose wrapper.
 - Consider a `jsonb` return type convention (`{ ok, data }`) so RPC results don't need casts.
 
-### 5. Tabs navigation (UX, low effort)
-- Use Expo Router `Tabs`: **Discover · Matches · Tonight · Me** (profile, "I don't eat", pairing, recipes).
-- Home becomes the Discover tab; invites and the Tonight "Join" prompt become badges.
-
-### 6. CI on GitHub Actions (free tier)
+### 5. CI on GitHub Actions (free tier)
 - On every push: `npm ci`, typecheck, `npm test`.
 - A second job runs `supabase start` and `npm run test:db` (Docker is available on hosted runners).
 - Optionally, build the APK on tags and attach it to a GitHub Release, still local tooling, no EAS cloud.
 
-### 7. Server-side hardening (low effort, do before sharing the APK)
+### 6. Server-side hardening (low effort, do before sharing the APK)
 - Rate-limit `redeem_pairing_code` attempts per user (a small `attempts` table checked in the RPC).
 - Let the inviter cancel an invite; add "delete my account" (cascades are already in place).
 - Schedule a cleanup of old used/expired pairing codes (`pg_cron` is available on the free tier).
 
-### 8. Notifications when the app is closed (only if wanted later)
+### 7. Notifications when the app is closed (only if wanted later)
 - Requires leaving Expo Go for a development build (`npx expo run:android`) and a free Firebase project for FCM.
 - A Supabase Database Webhook or Edge Function (free tier) on `matches` and `tonight_sessions` inserts would call Expo's push service.
 - This conflicts with the "Expo Go only" constraint today, so it's a deliberate future step, not a drift.
 
-### 9. More recipe sources and Czech
+### 8. More recipe sources and Czech
 - **Recipes:** keep `recipes.source` generic. Add an importer per source reusing `normalizeIngredient` and the ingredient map. Own recipes could be a small admin screen gated by a `role` column.
 - **Czech:** add `src/i18n/cs.ts` (same shape as `en.ts`) plus Czech synonyms in the ingredient map. Recipe text would need translation or Czech sources.
 

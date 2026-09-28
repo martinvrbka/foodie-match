@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MatchOverlay } from '../components/MatchOverlay';
 import { AuthProvider, useAuth } from '../data/auth';
+import { RecipeSettingsProvider } from '../data/filters';
 import { MatchProvider } from '../data/matches';
 import { ProfileProvider } from '../data/profile';
 import { colors } from '../theme/tokens';
@@ -24,27 +25,28 @@ function Routes() {
         <Stack.Screen name="sign-up" />
       </Stack.Protected>
       <Stack.Protected guard={!!session}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="discover" />
-        <Stack.Screen name="matches" />
+        {/* Swipe · Matches · Recipes · Week plan; everything else opens over them. */}
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="profile" />
         <Stack.Screen name="pair" />
         <Stack.Screen name="tonight" />
-        <Stack.Screen name="week" />
         <Stack.Screen name="scan" />
         <Stack.Screen name="exclusions" />
-        <Stack.Screen name="recipes" />
+        <Stack.Screen name="do-not-eat" />
         <Stack.Screen name="recipe/[id]" />
       </Stack.Protected>
     </Stack>
   );
   if (!session) return stack;
-  // Signed in: shared profile state, and "It's a match!" over any screen.
+  // Signed in: shared profile and filter state, and "It's a match!" over any screen.
   return (
     <ProfileProvider userId={session.user.id}>
-      <MatchProvider>
-        {stack}
-        <MatchOverlay />
-      </MatchProvider>
+      <RecipeSettingsProvider>
+        <MatchProvider>
+          {stack}
+          <MatchOverlay />
+        </MatchProvider>
+      </RecipeSettingsProvider>
     </ProfileProvider>
   );
 }

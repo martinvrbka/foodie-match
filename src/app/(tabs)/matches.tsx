@@ -3,17 +3,19 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../components/Button';
-import { Chip } from '../components/Chip';
-import { RecipeMeta } from '../components/RecipeMeta';
-import { useAuth } from '../data/auth';
-import { errorText } from '../data/errors';
-import { markMatchesSeen, type MatchRow, removeMatch, useMatchList } from '../data/matches';
-import { useProfile } from '../data/profile';
-import { photoUrl } from '../data/recipes';
-import { t } from '../i18n';
-import { COOK_TIME_OPTIONS, filterMatches, type MatchFilter, matchCuisines } from '../logic/matches';
-import { colors, font, radius, spacing } from '../theme/tokens';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
+import { RecipeMeta } from '../../components/RecipeMeta';
+import { useAuth } from '../../data/auth';
+import { errorText } from '../../data/errors';
+import { markMatchesSeen, type MatchRow, removeMatch, useMatchList } from '../../data/matches';
+import { useProfile } from '../../data/profile';
+import { useTonight } from '../../data/tonight';
+import { photoUrl } from '../../data/recipes';
+import { t } from '../../i18n';
+import { COOK_TIME_OPTIONS, filterMatches, type MatchFilter, matchCuisines } from '../../logic/matches';
+import { ACTIVE_STATUSES } from '../../logic/tonight';
+import { colors, font, radius, spacing } from '../../theme/tokens';
 
 const toItem = (m: MatchRow) => ({
   recipeId: m.recipe.id,
@@ -30,6 +32,12 @@ export default function Matches() {
   const { matches, error, reload } = useMatchList();
   const [filter, setFilter] = useState<MatchFilter>({ maxMinutes: null, cuisine: null });
   const [removeError, setRemoveError] = useState<unknown>(null);
+  // Tonight picks one of our matches, so it starts here (it used to be on Home).
+  const tonight = useTonight(userId);
+  const tonightSession = tonight.data?.session;
+  const tonightActive = !!tonightSession && ACTIVE_STATUSES.includes(tonightSession.status);
+  const tonightInvite =
+    tonightActive && tonightSession.startedBy !== userId && tonightSession.status === 'swiping' && !tonight.data?.me?.swipeDone;
 
   const items = useMemo(() => (matches ?? []).map(toItem), [matches]);
   const shown = useMemo(() => filterMatches(items, filter), [items, filter]);
@@ -58,8 +66,18 @@ export default function Matches() {
 
   const header = (
     <View style={styles.header}>
-      <Button label={`‹ ${t('recipes.back')}`} variant="text" onPress={() => router.back()} />
       <Text style={styles.title}>{t('matches.title')}</Text>
+      {partner && tonightInvite ? (
+        <View style={styles.invite} accessibilityRole="alert">
+          <Text style={styles.inviteText}>{t('tonight.joinBanner', { name: partner.display_name })}</Text>
+          <Button label={t('tonight.join')} onPress={() => router.push('/tonight')} />
+        </View>
+      ) : partner && (items.length > 0 || tonightActive) ? (
+        <Button
+          label={tonightActive ? t('tonight.continue') : t('tonight.cta')}
+          onPress={() => router.push('/tonight')}
+        />
+      ) : null}
       {items.length > 0 ? (
         <>
           <Text style={styles.label}>{t('matches.time')}</Text>
@@ -97,7 +115,7 @@ export default function Matches() {
 
   if (error || matches === null) {
     return (
-      <SafeAreaView style={[styles.safe, styles.center]}>
+      <SafeAreaView style={[styles.safe, styles.center]} edges={['top', 'left', 'right']}>
         {error ? (
           <>
             <Text style={styles.body}>{errorText(error)}</Text>
@@ -123,9 +141,7 @@ export default function Matches() {
           <View style={styles.emptyBox}>
             <Text style={styles.body}>{empty}</Text>
             {!partner ? (
-              <Button label={t('pair.cta')} onPress={() => router.replace('/pair')} />
-            ) : items.length === 0 ? (
-              <Button label={t('discover.title')} onPress={() => router.replace('/discover')} />
+              <Button label={t('pair.cta')} onPress={() => router.push('/pair')} />
             ) : null}
           </View>
         }
@@ -165,6 +181,8 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   header: { gap: spacing.sm, paddingBottom: spacing.md, alignItems: 'flex-start' },
   title: { fontSize: font.hero, fontWeight: '800', color: colors.text },
+  invite: { alignSelf: 'stretch', padding: spacing.md, gap: spacing.sm, borderRadius: radius.md, backgroundColor: colors.accent },
+  inviteText: { fontSize: font.body, fontWeight: '700', color: colors.onAccent },
   label: { fontSize: font.small, fontWeight: '700', color: colors.textMuted, marginTop: spacing.sm },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   muted: { fontSize: font.small, color: colors.textMuted, marginTop: spacing.sm },

@@ -217,7 +217,7 @@ function Paired({ name, onUnpaired }: { name: string; onUnpaired: () => void }) 
       <Text style={styles.title}>{t('home.pairedWith', { name })}</Text>
       <Text style={styles.muted}>{t('pair.pairedHint')}</Text>
       {error ? <Text style={styles.error}>{errorText(error)}</Text> : null}
-      <Button label={t('discover.title')} onPress={() => router.replace('/discover')} />
+      <Button label={t('pair.startSwiping')} onPress={() => router.navigate('/')} />
       <Button label={t('pair.unpair')} variant="text" onPress={confirm} busy={busy} />
     </View>
   );

@@ -27,7 +27,8 @@
           "cameraPermission": "Foodie Match uses the camera to scan your partner’s pairing QR code."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ],
     "scheme": "foodiematch",
     "experiments": {

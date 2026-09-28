@@ -75,3 +75,12 @@ export function buildDeck({ recipes, myExcluded, mySwiped, blocked, partner, rng
     ...shuffle(partnerCant, rng).map((r) => ({ recipeId: r.id, partnerExcluded: true })),
   ];
 }
+
+/**
+ * After the deck is rebuilt (e.g. my partner changed our shared filters), the card I
+ * was looking at stays on top if the new deck still has it.
+ */
+export function keepOnTop(deck: readonly DeckCard[], recipeId: RecipeId | null): DeckCard[] {
+  const i = recipeId === null ? -1 : deck.findIndex((c) => c.recipeId === recipeId);
+  return i <= 0 ? [...deck] : [deck[i], ...deck.slice(0, i), ...deck.slice(i + 1)];
+}

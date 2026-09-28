@@ -25,8 +25,10 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 
 ## Advanced filters (`filters.ts`)
 - `passesFilters`: max time, difficulties, cuisines, each checked on its own. No cook time fails any max time; no difficulty/cuisine passes that filter only.
-- `visibleInOverview`: my own filters and my "Do not eat" marks only.
-- `blockedForMatching`: fails my filters, or marked by me, or in the partner's blocked set (from the server). Mirrored in SQL `private.blocked_recipe_ids`: change both together.
+- Filters are **shared by a paired couple** (one set; either partner changes it for both). Unpaired: my own. "Do not eat" marks are always personal.
+- `visibleInOverview`: the shared filters and my "Do not eat" marks only.
+- `blockedForMatching`: fails the filters, or marked by me, or in the partner's blocked set (from the server). Mirrored in SQL `private.blocked_recipe_ids` (+ `private.filters_for`): change both together.
+- `filtersHoldBack`: filters on and hiding a recipe I haven't swiped ⇒ the empty deck says "No recipe matches the filters.".
 - `filterOptions`: only values recipes have; difficulty in easy → hard order, cuisines alphabetical. Max time uses the fixed `MAX_TIME_OPTIONS`.
 
 ## Deck (`buildDeck`)
@@ -35,6 +37,7 @@ Pure functions only: no React, Supabase, `Date.now()`, or `Math.random()`. Injec
 - Recipes the partner can't eat (their expanded exclusions) go **after** all others and carry a partner-excluded flag.
 - Among recipes both can eat: partner-liked-but-unseen ones take every 3rd position (index 2, 5, 8…) while any remain; the rest is shuffled with the injected RNG.
 - Unpaired ⇒ no partner flag and no partner ordering.
+- `keepOnTop`: when the deck is rebuilt (filters changed), the card on top stays on top if still allowed.
 
 ## Match (`match.ts`: `expandExclusions`, `isCompatible`, `isMatch`)
 - Match ⇔ both liked in `discover` **and** no ingredient in the union of both partners' expanded exclusions.

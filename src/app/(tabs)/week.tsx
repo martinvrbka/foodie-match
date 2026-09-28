@@ -2,23 +2,23 @@ import { router } from 'expo-router';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button } from '../components/Button';
-import { Chip } from '../components/Chip';
-import { AvailabilityPanel } from '../components/week/AvailabilityPanel';
-import { Calendar } from '../components/week/Calendar';
-import { rangeLabel } from '../components/week/format';
-import { Reswipe } from '../components/week/Reswipe';
-import { SetupGrid } from '../components/week/SetupGrid';
-import { useAuth } from '../data/auth';
-import { cachedRecipes } from '../data/discover';
-import { errorText } from '../data/errors';
-import { useMatchList } from '../data/matches';
-import { useProfile } from '../data/profile';
-import type { RecipeSummary } from '../data/recipes';
-import { availabilityFor, candidatesFor, editContext, useWeek, type WeekPlan } from '../data/week';
-import { t } from '../i18n';
-import { isGenerated, mondayOf, startedWithoutAccept, startOptions } from '../logic/week';
-import { colors, font, spacing } from '../theme/tokens';
+import { Button } from '../../components/Button';
+import { Chip } from '../../components/Chip';
+import { AvailabilityPanel } from '../../components/week/AvailabilityPanel';
+import { Calendar } from '../../components/week/Calendar';
+import { rangeLabel } from '../../components/week/format';
+import { Reswipe } from '../../components/week/Reswipe';
+import { SetupGrid } from '../../components/week/SetupGrid';
+import { useAuth } from '../../data/auth';
+import { cachedRecipes } from '../../data/discover';
+import { errorText } from '../../data/errors';
+import { useMatchList } from '../../data/matches';
+import { useProfile } from '../../data/profile';
+import type { RecipeSummary } from '../../data/recipes';
+import { availabilityFor, candidatesFor, editContext, useWeek, type WeekPlan } from '../../data/week';
+import { t } from '../../i18n';
+import { isGenerated, mondayOf, startedWithoutAccept, startOptions } from '../../logic/week';
+import { colors, font, spacing } from '../../theme/tokens';
 
 export default function Week() {
   const { session } = useAuth();
@@ -103,7 +103,7 @@ export default function Week() {
     body = (
       <Centered>
         <Text style={styles.body}>{t('week.unpaired')}</Text>
-        <Button label={t('pair.cta')} onPress={() => router.replace('/pair')} />
+        <Button label={t('pair.cta')} onPress={() => router.push('/pair')} />
       </Centered>
     );
   } else if (week.error) {
@@ -240,9 +240,8 @@ export default function Week() {
     ) : null;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Button label={`‹ ${t('recipes.back')}`} variant="text" onPress={() => router.back()} />
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>{t('week.title')}</Text>
           {plan ? <Text style={styles.muted}>{rangeLabel(plan.firstDay, plan.weekStart)}</Text> : null}
@@ -267,7 +266,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   flex: { flex: 1 },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.sm },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
   headerText: { flex: 1 },
   headerTitle: { fontSize: font.title, fontWeight: '800', color: colors.text },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
